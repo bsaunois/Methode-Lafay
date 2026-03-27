@@ -121,6 +121,20 @@ function startElapsed(){
 }
 function stopElapsed(){if(A.elTick){clearInterval(A.elTick);A.elTick=null;}}
 
+// ═══════════════════════════════ RÉÉQUILIBRAGE STRETCH STEPS ═══════════════════════════════
+function buildReequilStretchSteps(){
+  const p=getProfile();
+  const variant=p?.reequil?.variant||'moinsMot';
+  const rp=REEQUIL_F[variant];
+  const nums=rp.stretchNums;
+  const stretches=nums?STRETCH.filter(s=>nums.includes(s.n)):STRETCH;
+  return stretches.map(s=>({icon:'🧘',title:s.title,desc:s.desc,dur:s.dur||30,isCardio:true}));
+}
+function getWuSteps(){
+  if(isF()&&isReequilActive())return buildReequilStretchSteps();
+  return buildWarmupSteps();
+}
+
 // ═══════════════════════════════ WARMUP ═══════════════════════════════
 // Exactement comme page 21 du livre :
 // 3 rounds de [cardio 15-30s + 10 reps exercice A]
@@ -159,7 +173,7 @@ function startSession(){
     exercises:prog.slots.map(sl=>({exoId:sl.exo,sets:[]})),complete:false
   };
   if(isF())sess.zoneId=p.zoneId;
-  S.active=sess;A.sessStart=Date.now();A.phase=isF()?'workout':'warmup';A.wuStep=0;A.reps={};A.wuTimerRunning=false;A.wuTimerBeeped=false;
+  S.active=sess;A.sessStart=Date.now();A.phase=(isF()&&isReequilActive())||!isF()?'warmup':'workout';A.wuStep=0;A.reps={};A.wuTimerRunning=false;A.wuTimerBeeped=false;
   renderSeance();
 }
 
@@ -330,6 +344,7 @@ function renderIdle(){
 function renderWuScreen(steps){
   const sc=document.getElementById('screen-seance');
   const el=A.sessStart?fmtS((Date.now()-A.sessStart)/1000):'00:00';
+  const isReequilStretch=isF()&&isReequilActive();
   const curStep=steps[A.wuStep];
   const lastStep=A.wuStep>=steps.length-1;
   
@@ -383,7 +398,7 @@ function renderWuScreen(steps){
   const stepNum=`${A.wuStep+1}/${steps.length}`;
   
   sc.innerHTML=`
-    <div class="shdr"><span class="lbl">🔥 ÉCHAUFFEMENT · ${stepNum}</span><span class="el" id="sel">${el}</span><button class="xb" onclick="abandonSession()">✕</button></div>
+    <div class="shdr"><span class="lbl">${isReequilStretch?'🧘 SOUPLESSE':'🔥 ÉCHAUFFEMENT'} · ${stepNum}</span><span class="el" id="sel">${el}</span><button class="xb" onclick="abandonSession()">✕</button></div>
     <div class="wu-wrap">
       <div class="wu-dots">${dots}</div>
       <div class="wu-card">
@@ -398,7 +413,7 @@ function renderWuScreen(steps){
         ${btnLbl?`<button class="btn bp bw" onclick="wuAction()">${btnIcon} ${btnLbl}</button>`:''}
       </div>
       ${doneChips?`<div class="wu-done-list">${doneChips}</div>`:''}
-      <div class="wu-skip" onclick="skipWu()">Passer l'échauffement →</div>
+      <div class="wu-skip" onclick="skipWu()">${isReequilStretch?'Passer la souplesse →':'Passer l\'échauffement →'}</div>
     </div>`;
   
   // Auto-start rest timer
@@ -409,9 +424,9 @@ function renderWuScreen(steps){
 
 // Unified warmup action handler
 function wuAction(){
-  const steps=buildWarmupSteps();
+  const steps=getWuSteps();
   const curStep=steps[A.wuStep];
-  
+
   if(curStep.isRest){
     // Start rest countdown
     A.wuTimerRunning=true;
@@ -420,11 +435,11 @@ function wuAction(){
       A.wuTimerRunning=false;
       A.wuStep++;
       if(A.wuStep>=steps.length){A.phase='workout';renderSeance();}
-      else renderWuScreen(buildWarmupSteps());
+      else renderWuScreen(getWuSteps());
     },'down');
     return;
   }
-  
+
   if(curStep.isCardio){
     if(!A.wuTimerRunning){
       // Start cardio count-UP timer
@@ -439,11 +454,11 @@ function wuAction(){
       A.wuTimerBeeped=false;
     }
   }
-  
+
   // Advance to next step
   A.wuStep++;
   if(A.wuStep>=steps.length){A.phase='workout';renderSeance();return;}
-  renderWuScreen(buildWarmupSteps());
+  renderWuScreen(getWuSteps());
 }
 
 // Warmup-specific timer
@@ -768,23 +783,73 @@ function renderIdleF(){
   const el=document.getElementById('screen-seance');
   const p=getProfile();
   if(!p||!p.zoneId){el.innerHTML=`<div class="tb"><h1>LAFAY</h1><div class="sp"></div><span class="fem-badge" style="font-size:9px;padding:2px 7px;background:var(--adim);border:1px solid rgba(232,121,160,.25);border-radius:10px;color:var(--accent);font-weight:800;letter-spacing:1.5px">FÉMININ</span></div><div class="sa"><div class="empty"><div class="ic">🌸</div><p>Configure ta zone dans l'onglet Zones</p></div></div>`;return;}
-  const z=ZONE_MAP[p.zoneId];const prog=getCurProg();
-  const ss=getSessions().filter(s=>s.zoneId===p.zoneId);const last=ss[0];
 
-  let h=`<div class="tb"><h1>LAFAY</h1><div class="sp"></div><span class="fem-badge" style="font-size:9px;padding:2px 7px;background:var(--adim);border:1px solid rgba(232,121,160,.25);border-radius:10px;color:var(--accent);font-weight:800;letter-spacing:1.5px">FÉMININ</span></div><div class="sa">`;
-  h+=`<div style="padding:16px 14px 8px"><div style="font-size:22px;font-weight:900">Prête à t'entraîner ?</div>
-    <div style="font-size:13px;color:var(--dim);margin-top:4px">${z?z.icon+' '+z.label:''} — ${prog?prog.label:''}</div></div>`;
-  h+=`<div class="stat-row"><div class="stat"><div class="v">${ss.length}</div><div class="l">Séances</div></div>
-    <div class="stat"><div class="v">${last?fDate(last.date):'—'}</div><div class="l">Dernière</div></div></div>`;
-  if(prog){
-    h+=`<div class="card card0">`;
-    prog.slots.forEach((s,i)=>{const exo=getExo(s.exo);
-      h+=`<div class="er"><div class="eid">${i+1}</div><div class="ebody"><div class="ename">${exo?exo.name:s.exo}</div>
-        <div class="esub">${s.sets?s.sets+'×':''}${s.reps||'max'} · ${rLbl(s.rh)} · repos ${s.r1}s</div></div></div>`;
-    });
-    h+=`</div>`;
+  const inReequil=isReequilActive();
+  const prog=getCurProg();
+  const femBadge=`<span class="fem-badge" style="font-size:9px;padding:2px 7px;background:var(--adim);border:1px solid rgba(232,121,160,.25);border-radius:10px;color:var(--accent);font-weight:800;letter-spacing:1.5px">FÉMININ</span>`;
+  let h=`<div class="tb"><h1>LAFAY</h1><div class="sp"></div>${femBadge}</div><div class="sa">`;
+
+  if(inReequil){
+    const daysLeft=reequilDaysLeft();
+    const endDate=reequilEndDate();
+    const endStr=endDate?endDate.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'';
+    const variant=p.reequil.variant||'moinsMot';
+    const rp=REEQUIL_F[variant];
+    const stretchList=rp.stretchNums?rp.stretchNums:STRETCH.map(s=>s.n);
+    const stretchCount=stretchList.length;
+    const ss=getSessions().filter(s=>s.programId&&s.programId.startsWith('reequil'));
+    const last=ss[0];
+
+    h+=`<div style="padding:14px 14px 8px">
+      <div style="font-size:10px;font-weight:800;letter-spacing:3px;color:var(--accent);margin-bottom:6px">PHASE DE RÉÉQUILIBRAGE</div>
+      <div style="font-size:24px;font-weight:900">${daysLeft} jours restants</div>
+      <div style="font-size:12px;color:var(--dim);margin-top:3px">Fin le ${endStr} · ${p.reequil.months} mois · ${rp.freq}</div>
+    </div>`;
+    h+=`<div class="stat-row"><div class="stat"><div class="v">${ss.length}</div><div class="l">Séances</div></div>
+      <div class="stat"><div class="v">${last?fDate(last.date):'—'}</div><div class="l">Dernière</div></div></div>`;
+
+    // Stretching section
+    h+=`<div class="slab">Souplesse à faire aussi</div>
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:6px">${stretchCount} exercices · onglet Souplesse</div>
+      <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--accent);line-height:1.8;word-break:break-all">Exos ${stretchList.join(', ')}</div>
+    </div>`;
+
+    // Transverse exercises
+    h+=`<div class="slab">Exercices transversaux</div>`;
+    if(prog){
+      h+=`<div class="card card0">`;
+      prog.slots.forEach((s,i)=>{const exo=getExo(s.exo);
+        h+=`<div class="er"><div class="eid">${i+1}</div><div class="ebody"><div class="ename">${exo?exo.name:s.exo}</div>
+          <div class="esub">${s.sets}×max · ${rLbl(s.rh)} · repos ${s.r1}s</div></div></div>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`<div style="padding:14px 14px 6px"><button class="btn bp bw" onclick="startSession()">DÉMARRER LA SÉANCE</button></div>`;
+    h+=`<div style="padding:0 14px 4px;display:flex;gap:8px">
+      <button class="btn bs bsm" onclick="toggleReequilOpt()" style="flex:1">Transversaux : Option ${p.reequil.transOpt||1} ↔</button>
+    </div>`;
+    h+=`<div style="padding:0 14px 14px"><button class="btn bg bsm bw" onclick="endReequil()">Terminer le rééquilibrage</button></div>`;
+
+  } else {
+    const z=ZONE_MAP[p.zoneId];
+    const ss=getSessions().filter(s=>s.zoneId===p.zoneId);const last=ss[0];
+    h+=`<div style="padding:16px 14px 8px"><div style="font-size:22px;font-weight:900">Prête à t'entraîner ?</div>
+      <div style="font-size:13px;color:var(--dim);margin-top:4px">${z?z.icon+' '+z.label:''} — ${prog?prog.label:''}</div></div>`;
+    h+=`<div class="stat-row"><div class="stat"><div class="v">${ss.length}</div><div class="l">Séances</div></div>
+      <div class="stat"><div class="v">${last?fDate(last.date):'—'}</div><div class="l">Dernière</div></div></div>`;
+    if(prog){
+      h+=`<div class="card card0">`;
+      prog.slots.forEach((s,i)=>{const exo=getExo(s.exo);
+        h+=`<div class="er"><div class="eid">${i+1}</div><div class="ebody"><div class="ename">${exo?exo.name:s.exo}</div>
+          <div class="esub">${s.sets?s.sets+'×':''}${s.reps||'max'} · ${rLbl(s.rh)} · repos ${s.r1}s</div></div></div>`;
+      });
+      h+=`</div>`;
+    }
+    h+=`<div style="padding:14px"><button class="btn bp bw" onclick="startSession()">DÉMARRER LA SÉANCE</button></div>`;
   }
-  h+=`<div style="padding:14px"><button class="btn bp bw" onclick="startSession()">DÉMARRER LA SÉANCE</button></div></div>`;
+
+  h+=`</div>`;
   el.innerHTML=h;
 }
 
@@ -1398,16 +1463,28 @@ function testFShowResults(){TF.phase='result';renderTestF();}
 function testFFinish(){
   const counts={a:0,b:0,c:0};
   Object.values(TF.answers).forEach(ans=>counts[TF_LABELS[ans]]++);
-  // a dominant → prep (rééquilibrage needed); otherwise → n1 (musculation)
   const usePrep=counts.a>counts.c;
   const z=ZONE_MAP[TF.zoneId];
   const levelId=usePrep?z.levels[0].id:z.levels[1].id;
-  saveTestResultsF({date:new Date().toISOString(),answers:{...TF.answers},counts,zoneId:TF.zoneId,assignedLevel:levelId});
+
+  // Durée de rééquilibrage selon les résultats (p. 37)
+  let reequilMonths=0;
+  if(counts.a>=6) reequilMonths=3;
+  else if(usePrep) reequilMonths=2;
+  else if(counts.c<6) reequilMonths=1;
+  const reequil=reequilMonths>0?{
+    months:reequilMonths,
+    startDate:new Date().toISOString(),
+    variant:reequilMonths>=3?'moinsMot':'plusMot',
+    active:true
+  }:null;
+
+  saveTestResultsF({date:new Date().toISOString(),answers:{...TF.answers},counts,zoneId:TF.zoneId,assignedLevel:levelId,reequilMonths});
   if(TF.fromOnboarding){
-    S.profile={zoneId:TF.zoneId,levelId};
+    S.profile={zoneId:TF.zoneId,levelId,reequil};
     document.getElementById('ob').classList.remove('on');
   } else {
-    const p=getProfile()||{};p.levelId=levelId;S.profile=p;
+    const p=getProfile()||{};p.levelId=levelId;p.reequil=reequil;S.profile=p;
   }
   closeTestF();
   applyGenderTheme();
@@ -1466,8 +1543,8 @@ function renderTestF(){
       routeDesc='Tu as besoin de préparer ton corps avant la musculation. Commence par le programme de rééquilibrage pendant 3 mois.';
       pillClass='test-pill-1';
     } else if(usePrep){
-      routeLabel='Préparation — 1 à 2 mois';
-      routeDesc='Quelques semaines de rééquilibrage seront bénéfiques avant d\'aborder pleinement la musculation.';
+      routeLabel='Préparation — 2 mois';
+      routeDesc='Deux mois de rééquilibrage sont recommandés avant d\'aborder pleinement la musculation.';
       pillClass='test-pill-1';
     } else if(counts.c>=6){
       routeLabel='Niveau 1 — Dès maintenant';
@@ -1536,6 +1613,7 @@ function renderTestCardF(){
           ${['a','b','c'].map(l=>`<div style="flex:1;text-align:center;background:var(--s2);border-radius:8px;padding:8px 4px;border:1px solid var(--border)"><div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700">${c[l]||0}</div><div style="font-size:10px;color:var(--dim);font-weight:700;letter-spacing:1px">Rép. ${l.toUpperCase()}</div></div>`).join('')}
         </div>
         <div style="font-size:12px;color:var(--dim);text-align:center;margin-bottom:10px">Niveau assigné : <b style="color:var(--text)">${lv?.label||test.assignedLevel}</b></div>
+        ${test.reequilMonths>0?`<div style="font-size:12px;color:var(--accent);text-align:center;font-weight:700;margin-bottom:8px">Rééquilibrage : ${test.reequilMonths} mois</div>`:''}
         <button class="btn bs bsm" onclick="openTestF(false)">REFAIRE</button>
       </div>
     </div>`;
@@ -1632,9 +1710,50 @@ function obFemFinish(){
   switchTab('seance');
 }
 
+// ═══════════════════════════════ FEMME: rééquilibrage helpers ═══════════════════════════════
+function isReequilActive(){
+  const p=getProfile();
+  if(!p?.reequil?.active)return false;
+  const end=new Date(p.reequil.startDate);
+  end.setMonth(end.getMonth()+p.reequil.months);
+  return new Date()<end;
+}
+function reequilDaysLeft(){
+  const p=getProfile();if(!p?.reequil)return 0;
+  const end=new Date(p.reequil.startDate);
+  end.setMonth(end.getMonth()+p.reequil.months);
+  return Math.max(0,Math.ceil((end-new Date())/86400000));
+}
+function reequilEndDate(){
+  const p=getProfile();if(!p?.reequil)return null;
+  const end=new Date(p.reequil.startDate);
+  end.setMonth(end.getMonth()+p.reequil.months);
+  return end;
+}
+function endReequil(){
+  if(!confirm('Terminer le rééquilibrage et passer au programme zone ?'))return;
+  const p=getProfile();if(!p)return;
+  if(p.reequil)p.reequil.active=false;
+  S.profile=p;renderSeance();
+}
+function toggleReequilOpt(){
+  const p=getProfile();if(!p?.reequil)return;
+  p.reequil.transOpt=(p.reequil.transOpt||1)===1?2:1;
+  S.profile=p;renderSeance();
+}
+
 // ═══════════════════════════════ FEMME: getCurProg override ═══════════════════════════════
 function getCurProgF(){
-  const p=getProfile();if(!p||!p.zoneId||!p.levelId)return null;
+  const p=getProfile();if(!p)return null;
+  if(isReequilActive()){
+    const variant=p.reequil.variant||'moinsMot';
+    const opt=p.reequil.transOpt||1;
+    const rp=REEQUIL_F[variant];
+    const partie1=opt===2?rp.slotsOpt2:rp.slotsOpt1;
+    const slots=[...partie1,...REEQUIL_F.partie2];
+    return{id:rp.id,label:rp.label,slots,isReequil:true,stretchNums:rp.stretchNums};
+  }
+  if(!p.zoneId||!p.levelId)return null;
   const z=ZONE_MAP[p.zoneId];if(!z)return null;
   const lvl=z.levels.find(l=>l.id===p.levelId);
   return lvl?{id:lvl.id,levelId:p.zoneId,label:lvl.label,slots:lvl.slots}:null;
