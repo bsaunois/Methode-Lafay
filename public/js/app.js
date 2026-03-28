@@ -295,7 +295,7 @@ function abandonSession(){
 // ═══════════════════════════════ RENDER — SÉANCE ═══════════════════════════════
 function renderSeance(){
   const sc=document.getElementById('screen-seance');
-  if(A.phase==='warmup'){renderWuScreen(buildWarmupSteps());if(!A.elTick)startElapsed();return;}
+  if(A.phase==='warmup'){renderWuScreen(getWuSteps());if(!A.elTick)startElapsed();return;}
   if(A.phase==='workout'){renderActive();if(!A.elTick)startElapsed();return;}
   if(A.phase==='complete'){renderComplete();return;}
   renderIdle();
@@ -1423,9 +1423,9 @@ const TF_QUESTIONS=[
   {q:"Exercice de souplesse 18 — penchez-vous en avant, jambes tendues. La pointe de vos doigts touche…",opts:["Le tibia","La cheville","Le sol"]},
   {q:"Pouvez-vous contracter consciemment votre périnée ? La contraction totale est…",opts:["Très difficile","Difficile","Facile"]},
   {q:"Prenez une grande inspiration, puis soufflez en rentrant le ventre de bas en haut au maximum. C'est…",opts:["Très difficile","Difficile","Facile"]},
-  {q:"Exercice de souplesse 7 — arrivez-vous à atteindre…",opts:["Le genou","Le côté du mollet","La cheville"]},
-  {q:"Exercice de souplesse 21 — arrivez-vous à poser…",opts:["Les mains","Les avant-bras","Le front"]},
-  {q:"Exercice de souplesse 30 — arrivez-vous à toucher avec…",opts:["Les mains","Les coudes","Les épaules"]},
+  {q:"Exercice de souplesse 7 — debout, penchez-vous sur le côté, la main glisse le long de la jambe vers la cheville. Arrivez-vous à atteindre…",opts:["Le genou","Le côté du mollet","La cheville"]},
+  {q:"Exercice de souplesse 21 — asseyez-vous en tailleur et penchez-vous en avant, fesses au sol. Arrivez-vous à poser…",opts:["Les mains","Les avant-bras","Le front"]},
+  {q:"Exercice de souplesse 30 — allongé sur le côté, jambe pliée en arrière, penchez-vous progressivement en arrière pour étirer l'avant de la cuisse. Arrivez-vous à toucher le sol avec…",opts:["Les mains","Les coudes","Les épaules"]},
   {q:"Le grand écart latéral (exercice 23) est pour vous…",opts:["Très dur","Dur","Facile"]},
   {q:"Le grand écart facial (exercice 25) est pour vous…",opts:["Très dur","Dur","Facile"]},
 ];
@@ -1522,7 +1522,7 @@ function renderTestF(){
           <p>Réponds honnêtement à chaque question. Ces réponses déterminent ton niveau de départ optimal.</p>
         </div>
         <div style="padding:10px;background:rgba(232,121,160,.04);border:1px solid rgba(232,121,160,.2);border-radius:var(--r2);font-size:12px;color:var(--dim);line-height:1.5;margin-bottom:16px">
-          ℹ️ <b style="color:var(--accent)">Ne force jamais les réponses.</b> Il n'y a pas de « bonne » réponse — tu risquerais de te blesser. Consulte les descriptions des exercices 18, 21, 30 dans l'onglet Souplesse.
+          ℹ️ <b style="color:var(--accent)">Ne force jamais les réponses.</b> Il n'y a pas de « bonne » réponse — tu risquerais de te blesser.
         </div>
         ${cards}
         <button id="tf-see-results" class="btn bp bw" style="margin-top:6px" onclick="testFShowResults()" ${answered<TF_QUESTIONS.length?'disabled':''}>VOIR MON RÉSULTAT →</button>
