@@ -534,7 +534,7 @@ function renderActive(){
     <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px;position:relative">
       <div class="cec">
         <div class="cec-top">
-          <div class="cec-info">SÉRIE ${sess.setNum} / ${totalSets} · ${rLbl(sl.rh).toUpperCase()}</div>
+          <div class="cec-info">EXO ${sess.exoIdx+1}/${prog.slots.length} · SÉRIE ${sess.setNum}/${totalSets} · ${rLbl(sl.rh).toUpperCase()}</div>
           <div class="cec-name">${exo?exo.name:sl.exo}</div>
           <div class="cec-ms">${exo?exo.ms.join(' · '):''}</div>
         </div>
@@ -932,7 +932,7 @@ function renderSouplesse(){
   const activeHtml=activeS?`
     <div class="ast">
       <button class="ast-close" onclick="A.stretchIdx=null;A.stretchEnd=null;if(A.stretchTick){clearInterval(A.stretchTick);A.stretchTick=null;}renderSouplesse()">✕</button>
-      <div class="an">EXERCICE ${activeS.n}</div>
+      <div class="an">EXERCICE ${activeS.n} / ${STRETCH.length}</div>
       <div class="at">${activeS.title||'Exercice '+activeS.n}</div>
       <div class="ast-ctl">
         <button class="ast-play" onclick="toggleStretchTimer()">${A.stretchTick?'⏸':'▶'}</button>
