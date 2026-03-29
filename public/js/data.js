@@ -387,18 +387,17 @@ const LVL_PROGS={
 // ═══════════════════════════════ EXERCICES FÉMININS ═══════════════════════════════
 const EL_F=[
 // ── Bas du corps ──────────────────────────────────────────────────────────────
-{id:"f_A1",f:"A",name:"Exercice a1",desc:"Fente avant : jambe avant fléchie à 90°, jambe arrière presque tendue. Monter et descendre lentement. Faire les deux côtés.",ms:["Cuisses","Fessiers"],d:1,bar:false,ch:false},
-{id:"f_B",f:"B",name:"Exercice b",desc:"Squat bilatéral : pieds largeur des épaules, descendre les fesses vers le sol en gardant le dos droit, puis remonter.",ms:["Cuisses","Fessiers"],d:1,bar:false,ch:false},
-{id:"f_B1",f:"B",name:"Exercice b1",desc:"Squat sumo : pieds très écartés, pointes vers l'extérieur. Descendre lentement, dos droit.",ms:["Cuisses","Fessiers","Intérieur des cuisses"],d:1,bar:false,ch:false},
-{id:"f_B2",f:"B",name:"Exercice b2",desc:"Squat sumo pieds surélevés : même technique que b1 mais pieds posés sur un support de quelques centimètres pour augmenter l'amplitude.",ms:["Cuisses","Fessiers","Intérieur des cuisses"],d:2,bar:false,ch:true},
-{id:"f_C",f:"C",name:"Exercice c",desc:"Donkey kick : à quatre pattes, ramener le genou vers la poitrine puis repousser le talon vers le plafond en contractant le fessier. Faire les deux côtés.",ms:["Fessiers"],d:1,bar:false,ch:false},
-{id:"f_C1",f:"C",name:"Exercice c1",desc:"Donkey kick jambe tendue : même mouvement que c mais avec la jambe tendue tout au long du mouvement.",ms:["Fessiers"],d:2,bar:false,ch:false},
-{id:"f_D",f:"D",name:"Exercice d",desc:"Hip thrust unilatéral : dos contre un canapé ou banc, un pied au sol jambe pliée, l'autre jambe tendue. Monter le bassin en contractant le fessier. Faire les deux côtés.",ms:["Fessiers"],d:1,bar:false,ch:true},
-{id:"f_D1",f:"D",name:"Exercice d1",desc:"Hip thrust bilatéral : même technique que d mais les deux pieds au sol simultanément.",ms:["Fessiers"],d:2,bar:false,ch:true},
-{id:"f_E",f:"E",name:"Exercice e",desc:"Abduction debout : debout, jambe tendue, écarter la jambe sur le côté le plus haut possible. Tenir 1 à 2 secondes, redescendre. Faire les deux côtés.",ms:["Abducteurs","Fessiers"],d:1,bar:false,ch:false},
-{id:"f_F",f:"F",name:"Exercice f",desc:"Adduction allongée : allongée sur le côté, jambe du dessus pliée pied au sol devant, jambe du dessous tendue. Soulever la jambe tendue le plus haut possible. Faire les deux côtés.",ms:["Adducteurs","Intérieur des cuisses"],d:1,bar:false,ch:false},
-{id:"f_G",f:"G",name:"Exercice g",desc:"Isométrie d'abduction : assis, placer un coussin ou balle entre les genoux. Presser et maintenir la pression pendant 30 à 60 secondes.",ms:["Adducteurs","Intérieur des cuisses"],d:1,bar:false,ch:false},
-{id:"f_H",f:"H",name:"Exercice h",desc:"Pont fessier isométrique bilatéral : allongée sur le dos, pieds à plat, bassin soulevé. Maintenir la position 30 à 60 secondes.",ms:["Fessiers","Ischios"],d:1,bar:false,ch:false},
+{id:"f_A",f:"A",name:"Exercice a",desc:"Debout, pieds très rapprochés et parallèles. En inspirant, plier les jambes et descendre le plus bas possible. Tenir 2 secondes en bas pour étirer les muscles, puis remonter. Faites cela pendant 1 minute. Puis recommencer (sans vous arrêtez) pieds légèrement écartés, pointes vers l'extérieur : descendre le plus bas possible en restant 2 secondes en bas à chaque répétition. Enchaîner sans s'arrêter pendant 1 minute, puis 1 dernière minute de la même façon.",ms:["Cuisses","Fessiers"],d:1,bar:false,ch:false},
+{id:"f_B",f:"B",name:"Exercice b",desc:"Debout dans le cadre d'une porte, mains aux montants à hauteur de la taille (ne pas trop s'aider des bras). Sur une jambe, descendre sans aller jusqu'à ce que la cuisse soit parallèle au sol — seulement la moitié du mouvement complet. Remonter en soufflant, jambe tendue. Recommencer. Travailler une jambe complètement, puis changer. Repos 2 à 3 minutes entre chaque jambe.",ms:["Cuisses","Fessiers"],d:1,bar:false,ch:false},
+{id:"f_B1",f:"B",name:"Exercice b1",desc:"Debout dans le cadre d'une porte, mains aux montants à hauteur de la taille. Sur une jambe, descendre en inspirant jusqu'à ce que la cuisse soit parallèle au sol, puis remonter en soufflant. Dos droit (penché vers l'avant, mais droit), ne pas cambrer en haut du mouvement. La jambe libre est légèrement levée en avant pour ne pas toucher le sol. Travailler une jambe complètement, puis changer.",ms:["Cuisses","Fessiers"],d:1,bar:false,ch:false},
+{id:"f_B2",f:"B",name:"Exercice b2",desc:"Reprendre la technique de b1. Cette fois descendre encore plus bas, le plus bas possible, puis remonter jambe tendue.",ms:["Cuisses","Fessiers"],d:2,bar:false,ch:false},
+{id:"f_C",f:"C",name:"Exercice c",desc:"Squat sauté : s'accroupir jusqu'à ce que les cuisses soient parallèles au sol, puis sauter le plus haut possible verticalement. Atterrir sur le premier tiers de la plante des pieds et rebondir immédiatement en repliant les genoux, sans temps d'arrêt. Ne jamais atterrir les jambes tendues ni les pieds à plat.",ms:["Cuisses","Fessiers"],d:2,bar:false,ch:false},
+{id:"f_D",f:"D",name:"Exercice d",desc:"Marche en canard : s'accroupir au maximum et marcher en canard. Compter chaque pas pour une répétition.",ms:["Cuisses","Fessiers","Ischiojambiers"],d:1,bar:false,ch:false},
+{id:"f_E",f:"E",name:"Exercice e",desc:"Squat unilatéral sur chaise : une jambe en appui sur une chaise (ou table basse), l'autre au sol. Descendre en pliant la jambe au sol, puis remonter. C'est la jambe sur la chaise qui fournit la majeure partie de l'effort. Freiner la descente pour éviter de rebondir en bas. Travailler la jambe droite puis la jambe gauche.",ms:["Cuisses","Fessiers"],d:2,bar:false,ch:true},
+{id:"f_F",f:"F",name:"Exercice f",desc:"Fente latérale : debout, pieds écartés. Plier une jambe en gardant l'autre parfaitement tendue. Descendre le plus bas possible sans décoller les pieds du sol. La jambe tendue accompagne le mouvement en restant bien droite, faisant le minimum d'effort. Alterner côté droit et côté gauche.",ms:["Cuisses","Adducteurs","Fessiers"],d:1,bar:false,ch:false},
+{id:"f_G",f:"G",name:"Exercice g",desc:"Lever de jambe arrière : à quatre pattes, ventre rentré pour éviter de cambrer les reins. Lever une jambe vers l'arrière en se concentrant pour que ce soit le fessier qui fasse le travail. Aller le plus haut possible sans cambrer, en soufflant. Redescendre lentement en inspirant en ramenant le genou vers la poitrine. Jambe légèrement fléchie pendant tout le mouvement. Alterner les deux jambes.",ms:["Fessiers"],d:1,bar:false,ch:false},
+{id:"f_G1",f:"G1",name:"Exercice c1",desc:"Lever de jambe latéral : à quatre pattes, ventre rentré pour ne pas cambrer les reins. Lever une jambe sur le côté lentement et régulièrement, le plus haut possible sans cambrer, en soufflant. Redescendre en inspirant en ramenant le genou vers l'autre cuisse. Jambe à l'équerre (à 90°) pendant tout le mouvement. Alterner les deux jambes.",ms:["Fessiers","Abducteurs"],d:2,bar:false,ch:false},
+{id:"f_H",f:"H",name:"Exercice h",desc:"Bonne conduite debout : debout, jambes légèrement fléchies. Se pencher en avant jusqu'à ce que le buste soit parallèle au sol, puis remonter en gardant le dos droit, légèrement cambré plutôt qu'arrondi. Bras tendus dans le prolongement du buste. Inspirer en montant, souffler en descendant. Mouvement lent et contrôlé, sans élan. Rentrer le ventre pendant tout l'exercice.",ms:["Ischiojambiers","Fessiers"],d:2,bar:false,ch:false},
 // ── Ventre plat ──────────────────────────────────────────────────────────────
 {id:"f_I",f:"I",name:"Exercice i",desc:"Transverse à 4 pattes, niveau de base : à quatre pattes, dos plat. Souffler en rentrant le ventre au maximum sous les côtes. Tenir l'apnée 3 à 7 secondes. Relâcher doucement.",ms:["Taille fine","Ventre plat"],d:1,bar:false,ch:false},
 {id:"f_I1",f:"I",name:"Exercice i1",desc:"Transverse à 4 pattes : à quatre pattes, reins plaqués, souffler en rentrant le ventre au maximum. La partie basse du ventre doit s'enfoncer jusqu'à rejoindre la colonne vertébrale. La partie haute du ventre semble passer sous les côtes. Tenir en apnée 3 à 7 s, puis relâcher.",ms:["Taille fine","Ventre plat"],d:1,bar:false,ch:false},
@@ -439,38 +438,77 @@ const EXO_F={};EL_F.forEach(e=>EXO_F[e.id]=e);
 const ZONES=[
 {id:"bas",label:"Bas du corps",sub:"Cuisses · Hanches · Fessiers",icon:"🦵",color:"#e879a0",
  levels:[
-  {id:"bas_prep",label:"Préparation",desc:"2-4 semaines",freq:"2-3×/sem",slots:[
-    {exo:"f_A1",sets:3,reps:null,rh:"normal",r1:90,r2:90,note:"Objectif: 20 reps 1ère série"},
-    {exo:"f_C",sets:3,reps:null,rh:"normal",r1:90,r2:90},
-    {exo:"f_D",sets:2,reps:null,rh:"normal",r1:60,r2:60,note:"3 min par côté"},
+  {id:"bas_prep",label:"Niveau 1",desc:"3 séries, 2 min repos",freq:"2-3×/sem",
+   promo:"Atteindre 30 reps à B1 (1ère série) et 20 reps à C (1ère série) → passer au niveau 2",
+   slots:[
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:0,note:"1/3 · Pieds rapprochés, parallèles"},
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:0,note:"2/3 · Pieds légèrement écartés, pointes vers l'extérieur"},
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:120,note:"3/3 · Même position, dernière minute"},
+    {exo:"f_B",sets:3,reps:null,rh:"normal",r1:120,r2:120,note:"3 séries par jambe. Remplacer B par B1 dès 25 reps"},
+    {exo:"f_C",sets:3,reps:null,rh:"normal",r1:120,r2:0},
   ]},
-  {id:"bas_n1",label:"Niveau 1",desc:"6 séries, 25s repos, rapide",freq:"3×/sem",slots:[
-    {exo:"f_A1",sets:6,reps:3,rh:"rapide",r1:25,r2:25,note:"6×3 → 6×10"},
-    {exo:"f_B",sets:6,reps:3,rh:"rapide",r1:25,r2:25},{exo:"f_C",sets:6,reps:3,rh:"rapide",r1:25,r2:90},
-    {exo:"f_D",sets:2,reps:null,rh:"normal",r1:60,r2:60},
-    {exo:"f_F",sets:4,reps:5,rh:"rapide",r1:25,r2:90},{exo:"f_E",sets:3,reps:12,rh:"normal",r1:60,r2:0},
+  {id:"bas_n1",label:"Niveau 2",desc:"6×5 reps, 25s repos, par jambe",freq:"3×/sem",
+   promo:"Atteindre 6 séries de 15 reps à B1 (par jambe) et 12 reps par série à C → passer au niveau 3",
+   slots:[
+    {exo:"f_B",sets:6,reps:5,rh:"normal",r1:25,r2:120,note:"Jambe droite (remplacer par B1 dès 10 reps/série)"},
+    {exo:"f_B",sets:6,reps:5,rh:"normal",r1:25,r2:120,note:"Jambe gauche (remplacer par B1 dès 10 reps/série)"},
+    {exo:"f_C",sets:4,reps:5,rh:"normal",r1:25,r2:0},
   ]},
-  {id:"bas_n2",label:"Niveau 2",desc:"Pieds surélevés, amplitude réduite",freq:"3×/sem",slots:[
-    {exo:"f_B1",sets:6,reps:3,rh:"rapide",r1:25,r2:25},{exo:"f_B2",sets:6,reps:3,rh:"rapide",r1:25,r2:25},
-    {exo:"f_C1",sets:6,reps:3,rh:"rapide",r1:25,r2:90},{exo:"f_D",sets:2,reps:null,rh:"normal",r1:60,r2:60},
-    {exo:"f_D1",sets:2,reps:null,rh:"normal",r1:60,r2:60},{exo:"f_G",sets:2,reps:null,rh:"iso",r1:90,r2:0},
+  {id:"bas_n2",label:"Niveau 3",desc:"Séries uniques maximum, par jambe",freq:"2-3×/sem",
+   promo:"Atteindre 20-30 reps par exercice en réduisant progressivement les temps de repos",
+   slots:[
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:0,note:"1/3 · Pieds rapprochés, parallèles"},
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:0,note:"2/3 · Pieds légèrement écartés, pointes vers l'extérieur"},
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:120,note:"3/3 · Même position, dernière minute"},
+    {exo:"f_C",sets:1,reps:null,rh:"normal",r1:0,r2:60},
+    {exo:"f_D",sets:1,reps:null,rh:"normal",r1:0,r2:60},
+    {exo:"f_B2",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe droite"},
+    {exo:"f_E",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe droite"},
+    {exo:"f_F",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe droite"},
+    {exo:"f_G",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe droite"},
+    {exo:"f_G1",sets:1,reps:null,rh:"normal",r1:0,r2:120,note:"Jambe droite"},
+    {exo:"f_B2",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_E",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_F",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_G",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_G1",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_H",sets:1,reps:null,rh:"normal",r1:0,r2:0},
   ]},
-  {id:"bas_n3",label:"Niveau 3 / Entretien",desc:"Amplitude complète, rythme normal",freq:"2-3×/sem",slots:[
-    {exo:"f_B1",sets:6,reps:3,rh:"normal",r1:25,r2:25},{exo:"f_B2",sets:6,reps:3,rh:"normal",r1:25,r2:25},
-    {exo:"f_C1",sets:6,reps:3,rh:"normal",r1:25,r2:90},{exo:"f_H",sets:2,reps:null,rh:"normal",r1:60,r2:60},
-    {exo:"f_F",sets:4,reps:null,rh:"rapide",r1:25,r2:90},{exo:"f_G",sets:2,reps:null,rh:"iso",r1:90,r2:0},
+  {id:"bas_n3",label:"Entretien",desc:"Comme N3, G1 avant G",freq:"2-3×/sem",slots:[
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:0,note:"1/3 · Pieds rapprochés, parallèles"},
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:0,note:"2/3 · Pieds légèrement écartés, pointes vers l'extérieur"},
+    {exo:"f_A",sets:1,reps:null,rh:"normal",dur:60,r1:0,r2:120,note:"3/3 · Même position, dernière minute"},
+    {exo:"f_C",sets:1,reps:null,rh:"normal",r1:0,r2:60},
+    {exo:"f_D",sets:1,reps:null,rh:"normal",r1:0,r2:60},
+    {exo:"f_B2",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe droite"},
+    {exo:"f_E",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe droite"},
+    {exo:"f_F",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe droite"},
+    {exo:"f_G1",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe droite"},
+    {exo:"f_G",sets:1,reps:null,rh:"normal",r1:0,r2:120,note:"Jambe droite"},
+    {exo:"f_B2",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_E",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_F",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_G1",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"Jambe gauche"},
+    {exo:"f_G",sets:1,reps:null,rh:"normal",r1:0,r2:120,note:"Jambe gauche"},
+    {exo:"f_H",sets:1,reps:null,rh:"normal",r1:0,r2:0},
   ]},
 ]},
 {id:"ventre",label:"Ventre plat",sub:"Abdominaux · Transverse · Taille",icon:"🎯",color:"#a78bfa",
  levels:[
-  {id:"v_prep",label:"Préparation",desc:"2-4 semaines",freq:"2-3×/sem",slots:[
+  {id:"v_prep",label:"Préparation",desc:"2-4 semaines",freq:"2-3×/sem",
+   promo:"Maîtriser les positions et compléter la séance sans difficulté",
+   slots:[
     {exo:"f_I3",sets:3,reps:null,rh:"normal",r1:90,r2:90},{exo:"f_J",sets:3,reps:null,rh:"normal",r1:60,r2:60},
   ]},
-  {id:"v_n1",label:"Niveau 1",desc:"6 séries, 25s repos, rapide",freq:"3×/sem",slots:[
+  {id:"v_n1",label:"Niveau 1",desc:"6 séries, 25s repos, rapide",freq:"3×/sem",
+   promo:"Atteindre 6 séries de 10 reps facilement à chaque exercice",
+   slots:[
     {exo:"f_I",sets:6,reps:3,rh:"rapide",r1:25,r2:25},{exo:"f_L",sets:6,reps:3,rh:"rapide",r1:25,r2:90},
     {exo:"f_J",sets:2,reps:null,rh:"normal",r1:90,r2:90},{exo:"f_K",sets:1,reps:null,rh:"normal",r1:0,r2:0,note:"3 min sans pause"},
   ]},
-  {id:"v_n2",label:"Niveau 2",desc:"Exercices avancés",freq:"3×/sem",slots:[
+  {id:"v_n2",label:"Niveau 2",desc:"Exercices avancés",freq:"3×/sem",
+   promo:"Maîtriser toutes les variations en amplitude complète et 6×10 reps facilement",
+   slots:[
     {exo:"f_I4",sets:6,reps:3,rh:"rapide",r1:25,r2:25},{exo:"f_I6",sets:6,reps:3,rh:"rapide",r1:25,r2:25},
     {exo:"f_M",sets:6,reps:3,rh:"rapide",r1:25,r2:90},{exo:"f_J1",sets:2,reps:null,rh:"normal",r1:90,r2:90},
     {exo:"f_K",sets:1,reps:null,rh:"normal",r1:0,r2:0},
@@ -486,11 +524,15 @@ const ZONES=[
   {id:"p_prep",label:"Préparation",desc:"2-4 semaines sur P et R",freq:"2-3×/sem",slots:[
     {exo:"f_P",sets:3,reps:null,rh:"normal",r1:90,r2:90,note:"Objectif: 20-25 reps"},{exo:"f_R",sets:3,reps:null,rh:"normal",r1:90,r2:0},
   ]},
-  {id:"p_n1",label:"Niveau 1",desc:"6 séries, 25s repos, rapide",freq:"3×/sem",slots:[
+  {id:"p_n1",label:"Niveau 1",desc:"6 séries, 25s repos, rapide",freq:"3×/sem",
+   promo:"Atteindre 6 séries de 10 reps à R (pieds sur chaise à 45 cm) → passer au niveau 2",
+   slots:[
     {exo:"f_R",sets:6,reps:4,rh:"rapide",r1:25,r2:25},{exo:"f_Q",sets:6,reps:3,rh:"rapide",r1:25,r2:25},
     {exo:"f_P",sets:6,reps:3,rh:"rapide",r1:25,r2:90},{exo:"f_T",sets:2,reps:null,rh:"normal",r1:90,r2:0},
   ]},
-  {id:"p_n2",label:"Niveau 2",desc:"Pieds surélevés",freq:"3×/sem",slots:[
+  {id:"p_n2",label:"Niveau 2",desc:"Pieds surélevés",freq:"3×/sem",
+   promo:"Atteindre 6 séries de 10 reps à Q et P1 → passer au niveau 3",
+   slots:[
     {exo:"f_R",sets:6,reps:3,rh:"rapide",r1:25,r2:25},{exo:"f_Q",sets:6,reps:3,rh:"rapide",r1:25,r2:25},
     {exo:"f_P1",sets:6,reps:3,rh:"rapide",r1:25,r2:90},{exo:"f_T",sets:2,reps:null,rh:"normal",r1:90,r2:90},
     {exo:"f_U",sets:2,reps:null,rh:"normal",r1:90,r2:0},
@@ -506,7 +548,9 @@ const ZONES=[
   {id:"b_prep",label:"Préparation",desc:"2-4 semaines",freq:"2-3×/sem",slots:[
     {exo:"f_V",sets:3,reps:null,rh:"normal",r1:90,r2:90},{exo:"f_W",sets:3,reps:null,rh:"iso",r1:60,r2:0},
   ]},
-  {id:"b_n1",label:"Niveau 1",desc:"6 séries, 25s repos",freq:"3×/sem",slots:[
+  {id:"b_n1",label:"Niveau 1",desc:"6 séries, 25s repos",freq:"3×/sem",
+   promo:"Atteindre 6 séries de 10 reps à V et X → passer au niveau 2",
+   slots:[
     {exo:"f_V",sets:6,reps:3,rh:"rapide",r1:25,r2:25},{exo:"f_X",sets:6,reps:3,rh:"rapide",r1:25,r2:90},
     {exo:"f_W",sets:3,reps:null,rh:"iso",r1:60,r2:0},
   ]},
@@ -528,7 +572,7 @@ const REEQUIL_F={
     {exo:'f_K', sets:1,reps:null,rh:'normal',r1:0, r2:60,note:'1 à 3 minutes sans pause'},
     {exo:'f_O', sets:1,reps:null,rh:'normal',r1:0, r2:60},
     {exo:'f_MI',sets:1,reps:20,  rh:'normal',r1:0, r2:0},
-    {exo:'f_DI',sets:1,reps:null,rh:'normal',r1:0, r2:0,note:'3 min de respiration abdominale'},
+    {exo:'f_DI',sets:1,reps:null,rh:'normal',r1:0, r2:0,note:'3 min de respiration abdominale',dur:180},
   ],
   moinsMot:{
     id:'reequil_moins',
@@ -570,3 +614,88 @@ const REEQUIL_F={
     ]
   }
 };
+
+// ═══════════════════════════════ PROFILS FÉMININS (livre p. 39–43) ═══════════════════════════════
+// days[0]=Lundi … days[6]=Dimanche
+// type: 'workout' | 'endurance' | 'repos' | 'mi_only'
+// zones: ids des zones ZONE_MAP à combiner dans la séance
+const PROFILES_F=[
+  {id:'p1',label:'Profil 1',freq:'3×/semaine',
+   desc:'Perdre du gras (bas du corps, ventre, haut du corps). Accent sur la musculation.',
+   days:[
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance',optional:true},
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'repos'},
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance',optional:true},
+    {type:'repos'},
+  ]},
+  {id:'p2',label:'Profil 2',freq:'3×/semaine',
+   desc:'Prendre du volume (tu te trouves trop maigre). Ne pas courir plus d\'une fois par semaine.',
+   days:[
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance',optional:true},
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'repos'},
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance',optional:true},
+    {type:'repos'},
+  ]},
+  {id:'p3',label:'Profil 3',freq:'3×/semaine + endurance',
+   desc:'Améliorer rapidement ses performances sportives. Même programme que P1, courir 1 à 3×/semaine.',
+   days:[
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance'},
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'repos'},
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance'},
+    {type:'repos'},
+  ]},
+  {id:'p4',label:'Profil 4',freq:'2×/semaine + endurance',
+   desc:'Perdre du gras (bas du corps, ventre, haut du corps). Accent sur l\'endurance.',
+   days:[
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance'},
+    {type:'repos'},
+    {type:'endurance'},
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance'},
+    {type:'repos'},
+  ]},
+  {id:'p5',label:'Profil 5',freq:'2×/semaine + endurance',
+   desc:'Améliorer progressivement ses performances sportives. Même programme que P4, courir 1 à 2×/semaine.',
+   days:[
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance'},
+    {type:'repos'},
+    {type:'endurance'},
+    {type:'workout',zones:['bas','poitrine','bras','ventre']},
+    {type:'endurance'},
+    {type:'repos'},
+  ]},
+  {id:'p6',label:'Profil 6',freq:'3×/semaine',
+   desc:'Satisfaite de son buste. Accent sur le bas du corps et la taille.',
+   days:[
+    {type:'workout',zones:['bas','poitrine','ventre']},
+    {type:'endurance'},
+    {type:'workout',zones:['bas','ventre']},
+    {type:'repos'},
+    {type:'workout',zones:['bas','poitrine','ventre']},
+    {type:'endurance'},
+    {type:'repos'},
+  ]},
+  {id:'moderate',label:'Modéré',freq:'2×/semaine',
+   desc:'Pour s\'entretenir ou commencer en douceur. Les bras sont optionnels. Séance intimité le mercredi (facultative).',
+   days:[
+    {type:'workout',zones:['bas','poitrine','bras','ventre'],brasOpt:true},
+    {type:'endurance',optional:true},
+    {type:'mi_only',optional:true},
+    {type:'repos'},
+    {type:'workout',zones:['bas','poitrine','bras','ventre'],brasOpt:true},
+    {type:'repos'},
+    {type:'repos'},
+  ]},
+];
+const PROFILE_F_MAP={};PROFILES_F.forEach(p=>PROFILE_F_MAP[p.id]=p);

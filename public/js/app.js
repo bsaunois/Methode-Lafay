@@ -15,15 +15,16 @@ const S={
 
 // ═══════════════════════════════ APP STATE ═══════════════════════════════
 let A={
-  tab:'seance',phase:'idle',wuStep:0,
+  tab:'programme',phase:'idle',wuStep:0,
   timerEnd:null,timerTotal:0,timerTick:null,elTick:null,sessStart:null,
   wuTimerRunning:false,wuTimerEnd:null,wuTimerTotal:0,wuTimerTick:null,wuTimerBeeped:false,wuTimerStart:null,wuTimerTarget:0,wuTimerMode:'down',
-  reps:{},feeling:3,expandSess:null,obLevel:'niveau_1',calWeek:0,
-  stretchIdx:null,stretchEnd:null,stretchTick:null,stretchTotal:0,
+  reps:{},feeling:3,expandSess:null,obLevel:'niveau_1',calWeek:0,reequilWeek:null,selDay:null,profileWeek:0,showProfileZoneLevels:false,showProfilePicker:false,
+  stretchIdx:null,stretchEnd:null,stretchTick:null,stretchTotal:0,confirmQuit:false,
 };
 
 // ═══════════════════════════════ UTILS ═══════════════════════════════
 const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+const getMonday=d=>{const r=new Date(d);const day=r.getDay()||7;r.setDate(r.getDate()-day+1);r.setHours(0,0,0,0);return r;};
 const p2=n=>String(Math.max(0,n)).padStart(2,'0');
 const fmtS=s=>{s=Math.max(0,Math.floor(s));return p2(Math.floor(s/60))+':'+p2(s%60)};
 const feelE=f=>['','😤','😐','💪','🔥','🏆'][f]||'💪';
@@ -68,6 +69,14 @@ function getTarget(exoId,setCount){
   if(t&&Array.isArray(t))return t;
   const lp=getLastPerf(exoId);
   return lp||null;
+}
+
+function getDefaultReps(){
+  const sl=getSlot();if(!sl)return 0;
+  const sess=getActive();if(!sess)return sl.reps||0;
+  const lp=getLastPerf(sl.exo);
+  if(lp&&lp[sess.setNum-1]!==undefined)return lp[sess.setNum-1];
+  return sl.reps||0;
 }
 
 // ═══════════════════════════════ TIMER ═══════════════════════════════
@@ -132,6 +141,7 @@ function buildReequilStretchSteps(){
 }
 function getWuSteps(){
   if(isF()&&isReequilActive())return buildReequilStretchSteps();
+  if(isF()&&hasProfileF())return STRETCH.map(s=>({icon:'🧘',title:s.title,desc:s.desc,dur:s.dur||30,isCardio:true}));
   return buildWarmupSteps();
 }
 
@@ -164,18 +174,28 @@ function buildWarmupSteps(){
 function skipWu(){stopWuTimer();A.wuTimerRunning=false;A.wuTimerBeeped=false;A.phase='workout';A.wuStep=0;renderSeance();}
 
 // ═══════════════════════════════ SESSION ═══════════════════════════════
-function startSession(){
-  const prog=getCurProg();const p=getProfile();
+function startSession(forceProgramId,dateOverride,skipReequil=false){
+  const prog=forceProgramId&&!isF()?PROGS[forceProgramId]:getCurProg();const p=getProfile();
   if(!prog||!p)return;
+  const d=dateOverride||new Date();
   const sess={
-    id:uid(),date:new Date().toISOString(),levelId:p.levelId,programId:prog.id,
+    id:uid(),date:d.toISOString(),levelId:p.levelId,programId:prog.id,
     startedAt:new Date().toISOString(),exoIdx:0,setNum:1,
     exercises:prog.slots.map(sl=>({exoId:sl.exo,sets:[]})),complete:false
   };
-  if(isF())sess.zoneId=p.zoneId;
-  S.active=sess;A.sessStart=Date.now();A.phase=(isF()&&isReequilActive())||!isF()?'warmup':'workout';A.wuStep=0;A.reps={};A.wuTimerRunning=false;A.wuTimerBeeped=false;
+  if(isF()){
+    sess.zoneId=p.zoneId;
+    if(p.profileId){
+      sess.profileId=p.profileId;
+      const selDate=A.selDay?new Date(A.selDay):d;
+      sess.profileDayIdx=(selDate.getDay()+6)%7;
+    }
+  }
+  A.selDay=null;A.confirmQuit=false;
+  S.active=sess;A.sessStart=Date.now();A.phase=!skipReequil&&((isF()&&(isReequilActive()||hasProfileF()))||!isF())?'warmup':'workout';A.wuStep=0;A.reps={};A.wuTimerRunning=false;A.wuTimerBeeped=false;
   renderSeance();
 }
+function selectDay(dateStr){A.selDay=A.selDay===dateStr?null:dateStr;renderProgramme();}
 
 function getSlot(){
   const sess=getActive();if(!sess)return null;
@@ -185,16 +205,16 @@ function getSlot(){
 function repKey(){const s=getActive();return s?`${s.exoIdx}_${s.setNum}`:'';}
 
 function chReps(d){
-  const k=repKey();const sl=getSlot();
-  const def=sl?(sl.reps||0):0;
+  const k=repKey();
+  const def=getDefaultReps();
   const cur=A.reps[k]!==undefined?A.reps[k]:def;
   A.reps[k]=Math.max(0,cur+d);
   const el=document.getElementById('rpv');if(el)el.textContent=A.reps[k];
 }
 
 function editReps(){
-  const k=repKey();const sl=getSlot();
-  const def=sl?(sl.reps||0):0;
+  const k=repKey();
+  const def=getDefaultReps();
   const cur=A.reps[k]!==undefined?A.reps[k]:def;
   const el=document.getElementById('rpv');if(!el)return;
   const inp=document.createElement('input');
@@ -218,7 +238,7 @@ function confirmSet(){
   const prog=isF()?getCurProg():PROGS[sess.programId];if(!prog)return;
   const sl=prog.slots[sess.exoIdx];if(!sl)return;
   const k=repKey();
-  const reps=A.reps[k]!==undefined?A.reps[k]:(sl.reps||0);
+  const reps=A.reps[k]!==undefined?A.reps[k]:getDefaultReps();
   sess.exercises[sess.exoIdx].sets.push({setNum:sess.setNum,reps});
   const totalSets=sl.sets||1;
   const lastSet=sess.setNum>=totalSets;
@@ -281,24 +301,45 @@ function saveSession(){
   }
   
   const ss=getSessions();ss.unshift(saved);S.sessions=ss;
-  S.active=null;stopElapsed();A.phase='idle';A.sessStart=null;A.reps={};
+  checkAndSaveExoUpgrades(sess);
+  S.active=null;stopElapsed();A.phase='idle';A.sessStart=null;A.reps={};A.selDay=null;
   renderSeance();
 }
 
 function abandonSession(){
-  if(!confirm('Abandonner la séance en cours ?'))return;
+  A.confirmQuit=true;renderSeance();
+}
+function cancelQuitSession(){
+  A.confirmQuit=false;renderSeance();
+}
+function doAbandonSession(){
   stopTimer();stopElapsed();stopWuTimer();
-  S.active=null;A.phase='idle';A.sessStart=null;A.reps={};A.wuTimerRunning=false;A.wuTimerBeeped=false;
+  S.active=null;A.phase='idle';A.sessStart=null;A.reps={};A.wuTimerRunning=false;A.wuTimerBeeped=false;A.selDay=null;A.confirmQuit=false;
   hideRest();renderSeance();
 }
+function renderQuitConfirm(){
+  const sc=document.getElementById('screen-seance');
+  const el=A.sessStart?fmtS((Date.now()-A.sessStart)/1000):'00:00';
+  sc.innerHTML=`
+    <div class="shdr"><span class="lbl">SÉANCE EN COURS</span><span class="el mono">${el}</span></div>
+    <div class="sa" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:0;padding:0 24px">
+      <div style="font-size:48px;margin-bottom:16px">🛑</div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:1px;margin-bottom:8px;text-align:center">Quitter la séance ?</div>
+      <div style="font-size:13px;color:var(--dim);margin-bottom:36px;text-align:center;line-height:1.5">Ta progression de cette séance<br>ne sera pas enregistrée.</div>
+      <button class="btn bw" style="width:100%;background:var(--err);border-color:var(--err);color:#fff;margin-bottom:12px" onclick="doAbandonSession()">Abandonner la séance</button>
+      <button class="btn bg bw" style="width:100%" onclick="cancelQuitSession()">← Reprendre la séance</button>
+    </div>`;
+}
 
-// ═══════════════════════════════ RENDER — SÉANCE ═══════════════════════════════
+// ═══════════════════════════════ RENDER — SÉANCE (overlay) ═══════════════════════════════
 function renderSeance(){
   const sc=document.getElementById('screen-seance');
+  if(A.phase==='idle'){sc.classList.remove('active');renderProgramme();return;}
+  sc.classList.add('active');
+  if(A.confirmQuit){renderQuitConfirm();return;}
   if(A.phase==='warmup'){renderWuScreen(getWuSteps());if(!A.elTick)startElapsed();return;}
   if(A.phase==='workout'){renderActive();if(!A.elTick)startElapsed();return;}
   if(A.phase==='complete'){renderComplete();return;}
-  renderIdle();
 }
 
 function renderIdle(){
@@ -509,7 +550,7 @@ function renderActive(){
   const totalSets=sl.sets||1;
   const el=A.sessStart?fmtS((Date.now()-A.sessStart)/1000):'';
   const k=`${sess.exoIdx}_${sess.setNum}`;
-  const def=sl.reps||0;
+  const def=getDefaultReps();
   const curReps=A.reps[k]!==undefined?A.reps[k]:def;
 
   // Previous perfs and targets
@@ -529,18 +570,24 @@ function renderActive(){
   const isLastSet=sess.setNum>=totalSets;
   const btnLbl=isLastExo&&isLastSet?'🏁 FIN DE SÉANCE':isLastSet?'→ EXERCICE SUIVANT':'✓ SÉRIE FAITE';
 
-  sc.innerHTML=`
-    <div class="shdr"><span class="lbl">${prog.label}</span><span class="el mono" id="sel">${el}</span><button class="xb" onclick="abandonSession()">✕</button></div>
-    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px;position:relative">
-      <div class="cec">
-        <div class="cec-top">
-          <div class="cec-info">EXO ${sess.exoIdx+1}/${prog.slots.length} · SÉRIE ${sess.setNum}/${totalSets} · ${rLbl(sl.rh).toUpperCase()}</div>
-          <div class="cec-name">${exo?exo.name:sl.exo}</div>
-          <div class="cec-ms">${exo?exo.ms.join(' · '):''}</div>
+  // Timed exercise (dur > 0): show countdown timer instead of rep counter
+  const isTimed=sl.dur>0;
+  let inputZone;
+  if(isTimed){
+    const initTime=fmtS(sl.dur);
+    inputZone=`
+      <div class="rpw">
+        <div style="text-align:center;padding:8px 0 4px;font-size:11px;font-weight:800;letter-spacing:2px;color:var(--dim)">CHRONO</div>
+        <div class="wu-timer-ring" style="margin:0 auto">
+          <svg viewBox="0 0 110 110"><circle cx="55" cy="55" r="50" fill="none" stroke="var(--s3)" stroke-width="7"/><circle id="wur" cx="55" cy="55" r="50" fill="none" stroke="var(--accent)" stroke-width="7" stroke-linecap="round" stroke-dasharray="314.159" stroke-dashoffset="0" transform="rotate(-90 55 55)" style="transition:stroke-dashoffset .1s linear"/></svg>
+          <div class="wu-timer-val" id="wutime">${initTime}</div>
         </div>
-        ${exo?`<div class="cec-desc">${exo.desc}</div>`:''}
-        ${sl.note?`<div class="cec-note">ℹ ${sl.note}</div>`:''}
       </div>
+      <div class="arow">
+        <button class="btn bp" id="timed-btn" style="flex:1" onclick="startTimedExo(${sl.dur})">${btnLbl==='🏁 FIN DE SÉANCE'?'▶ LANCER (fin auto)':'▶ LANCER LE CHRONO'}</button>
+      </div>`;
+  } else {
+    inputZone=`
       <div class="rpw">
         <div class="rpt">
           <span class="rl">REPS</span>
@@ -556,7 +603,22 @@ function renderActive(){
       </div>
       <div class="arow">
         <button class="btn bp" style="flex:1" onclick="confirmSet()">${btnLbl}</button>
+      </div>`;
+  }
+
+  sc.innerHTML=`
+    <div class="shdr"><span class="lbl">${prog.label}</span><span class="el mono" id="sel">${el}</span><button class="xb" onclick="abandonSession()">✕</button></div>
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px;position:relative">
+      <div class="cec">
+        <div class="cec-top">
+          <div class="cec-info">EXO ${sess.exoIdx+1}/${prog.slots.length} · SÉRIE ${sess.setNum}/${totalSets} · ${rLbl(sl.rh).toUpperCase()}</div>
+          <div class="cec-name">${exo?exo.name:sl.exo}</div>
+          <div class="cec-ms">${exo?exo.ms.join(' · '):''}</div>
+        </div>
+        ${exo?`<div class="cec-desc">${exo.desc}</div>`:''}
+        ${sl.note?`<div class="cec-note">ℹ ${sl.note}</div>`:''}
       </div>
+      ${inputZone}
       <div class="slab">Exercices</div>
       <div class="card card0">${exoList}</div>
     </div>
@@ -571,6 +633,29 @@ function renderActive(){
     </div>`;
 }
 
+function startTimedExo(dur){
+  const btn=document.getElementById('timed-btn');
+  if(btn){btn.disabled=true;btn.style.opacity='.5';}
+  startWuTimer(dur,()=>{
+    beep();
+    // store 0 reps (timed exercise) and confirm
+    const k=repKey();
+    A.reps[k]=0;
+    confirmSet();
+  },'down');
+}
+
+function editCompleteRep(exoId,setIdx){
+  const sess=getActive();if(!sess)return;
+  const ex=sess.exercises.find(e=>e.exoId===exoId);if(!ex||!ex.sets[setIdx])return;
+  const cur=ex.sets[setIdx].reps||0;
+  const v=parseInt(prompt('Corriger les répétitions :',cur));
+  if(isNaN(v)||v<0)return;
+  ex.sets[setIdx].reps=v;
+  S.active=sess;
+  renderComplete();
+}
+
 function renderComplete(){
   const sc=document.getElementById('screen-seance');
   const sess=getActive();const prog=isF()?getCurProg():(sess?PROGS[sess.programId]:null);
@@ -578,26 +663,34 @@ function renderComplete(){
   let totalReps=0;
   if(sess)sess.exercises.forEach(e=>e.sets.forEach(s=>totalReps+=(s.reps||0)));
 
-  // Build progression comparison
-  let progHtml='';
+  // Build per-exercise recap cards
+  let recapHtml='';
   if(sess&&prog){
-    const rows=prog.slots.map(sl=>{
+    const cards=prog.slots.map((sl,slIdx)=>{
       const ex=sess.exercises.find(e=>e.exoId===sl.exo);
       if(!ex||!ex.sets.length)return'';
+      const exo=getExo(sl.exo);
       const repsArr=ex.sets.map(s=>s.reps);
-      const total=repsArr.reduce((a,b)=>a+b,0);
+      const total=repsArr.filter(r=>r>0).reduce((a,b)=>a+b,0);
       const lp=getLastPerf(sl.exo);
       const lpTotal=lp?lp.reduce((a,b)=>a+b,0):0;
       const up=lpTotal>0&&total>lpTotal;
       const same=lpTotal>0&&total===lpTotal;
-      return`<div style="display:flex;align-items:center;gap:8px;padding:7px 14px;border-bottom:1px solid var(--border)">
-        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:var(--accent);min-width:24px">${sl.exo}</span>
-        <div style="flex:1;display:flex;gap:3px;flex-wrap:wrap">${repsArr.map(r=>`<span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:${up?'rgba(34,197,94,.08)':'var(--s2)'};border:1px solid ${up?'rgba(34,197,94,.3)':'var(--border)'};border-radius:4px;padding:2px 6px;color:${up?'var(--ok)':'var(--text)'}">${r}</span>`).join('')}</div>
-        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)">=${total}</span>
-        ${up?'<span style="color:var(--ok);font-size:14px">↑</span>':same?'<span style="color:var(--dim);font-size:12px">=</span>':''}
+      const trend=up?`<span style="color:var(--ok);font-weight:900;font-size:13px">↑</span>`:same?`<span style="color:var(--dim);font-size:12px">=</span>`:'';
+      const pills=repsArr.map((r,i)=>`<span onclick="editCompleteRep('${sl.exo}',${i})" style="font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;background:${up?'rgba(34,197,94,.1)':'var(--s3)'};border:1px solid ${up?'rgba(34,197,94,.3)':'var(--border)'};border-radius:6px;padding:3px 8px;color:${up?'var(--ok)':'var(--text)'};cursor:pointer" title="Taper pour corriger">${r}</span>`).join('');
+      const lpRow=lp?`<div style="font-size:10px;color:var(--dim);margin-top:3px">Préc. : ${lp.join('·')} = ${lpTotal}</div>`:'';
+      return`<div style="padding:9px 14px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--accent)">${slIdx+1}</span>
+          <span style="font-size:13px;font-weight:700;flex:1">${exo?exo.name:sl.exo}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:800">${total>0?total:''}</span>
+          ${trend}
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${pills}</div>
+        ${lpRow}
       </div>`;
     }).join('');
-    if(rows)progHtml=`<div class="slab">Résultats de la séance</div><div class="card card0" style="margin-bottom:10px">${rows}</div>`;
+    if(cards)recapHtml=`<div class="slab">Récapitulatif · <span style="font-size:10px;color:var(--dim);font-weight:500">appuie sur une valeur pour corriger</span></div><div class="card card0" style="margin-bottom:10px">${cards}</div>`;
   }
 
   const feelBtns=[1,2,3,4,5].map(f=>`<button class="feel-btn ${A.feeling===f?'on':''}" onclick="A.feeling=${f};renderComplete()">${feelE(f)}</button>`).join('');
@@ -614,10 +707,11 @@ function renderComplete(){
         </div>
         <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:var(--dim);text-transform:uppercase">Ressenti ?</div>
         <div class="feel-row">${feelBtns}</div>
+        ${(()=>{const up=sess&&getUpgradePending(sess);return up?`<div style="background:rgba(232,121,160,.12);border:1px solid rgba(232,121,160,.35);border-radius:10px;padding:10px 14px;margin:8px 0;max-width:300px;text-align:left"><div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:1.5px;margin-bottom:3px">🎯 PASSAGE À B1</div><div style="font-size:12px;color:var(--text);line-height:1.4">${up.msg}</div></div>`:'';})()}
         <button class="btn bp bw" style="max-width:300px;margin-top:4px" onclick="saveSession()">💾 ENREGISTRER</button>
-        <button class="btn bg" onclick="abandonSession()">Annuler</button>
+        <button class="btn bg" onclick="doAbandonSession()">Annuler</button>
       </div>
-      ${progHtml}
+      ${recapHtml}
     </div>`;
 }
 
@@ -643,13 +737,19 @@ function renderProgramme(){
 
   const weekRow=dayNames.map((dn,i)=>{
     const isTrain=trainDays.includes(i+1);
-    const isToday=weekDates[i].toDateString()===today.toDateString();
-    const isDone=ss.some(s=>{const sd=new Date(s.date);return sd.toDateString()===weekDates[i].toDateString()&&s.levelId===p.levelId;});
+    const d=weekDates[i];
+    const isToday=d.toDateString()===today.toDateString();
+    const isDone=ss.some(s=>{const sd=new Date(s.date);return sd.toDateString()===d.toDateString()&&s.levelId===p.levelId;});
+    const isFuture=d>today&&!isToday;
+    const isSel=A.selDay===d.toDateString();
     let cls='ddot';
     if(isTrain)cls+=' train';
     if(isDone)cls+=' done';
     if(isToday)cls+=' today';
-    return`<div class="dc"><div class="dn">${dn}</div><div class="${cls}">${isDone?'✓':isToday&&isTrain?'•':''}</div></div>`;
+    if(isSel)cls+=' sel';
+    const canSel=isTrain&&!isDone&&!isFuture;
+    const dot=`<div class="${cls}" ${canSel?`onclick="selectDay('${d.toDateString()}')" style="cursor:pointer"`:''}>${isDone?'✓':isSel?'▶':''}</div>`;
+    return`<div class="dc"><div class="dn">${dn}</div>${dot}</div>`;
   }).join('');
 
   const wtabs=weekKeys.length>1?`<div class="wtabs">${weekKeys.map((wk,i)=>`<div class="wtab ${i===cwk?'on':''}" onclick="A.calWeek=${i};renderProgramme()">${sch[wk].label.split(':')[0]}</div>`).join('')}</div>`:'';
@@ -662,12 +762,27 @@ function renderProgramme(){
       <div style="padding:4px 14px 10px;font-size:12px;color:var(--dim)">${curSch?curSch.label:''}</div>
     </div>`:'';
 
-  // ALT SESSIONS
-  let altHtml='';
-  if(progIds.length>1){
-    altHtml=`<div class="slab">Séances alternées</div><div style="display:flex;gap:8px;margin:0 14px 10px">
-      ${progIds.map((pid,i)=>{const pr=PROGS[pid];const cur=prog&&prog.id===pid;return`<div style="flex:1;background:${cur?'var(--adim)':'var(--s1)'};border:1px solid ${cur?'rgba(249,115,22,.4)':'var(--border)'};border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${cur?'var(--accent)':'var(--dim)'};margin-bottom:3px">SÉANCE ${i+1}${cur?' · PROCHAINE':''}</div><div style="font-size:12px;font-weight:700">${pr?pr.label:pid}</div><div style="font-size:11px;color:var(--dim);margin-top:2px">${pr?pr.slots.length+' exercices':''}</div></div>`;}).join('')}
-    </div>`;
+  // START SECTION
+  const selDate=A.selDay?new Date(A.selDay):null;
+  const selLabel=selDate?(selDate.toDateString()===today.toDateString()?"aujourd'hui":selDate.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'short'})):null;
+  const hint=`<div style="font-size:11px;color:var(--dim);margin-bottom:8px">${A.selDay?`Séance du ${selLabel}`:'Appuie sur un jour d\'entraînement pour le sélectionner'}</div>`;
+  let startHtml='';
+  if(prog&&progIds.length>1){
+    startHtml=`<div class="slab">Choisir une séance</div>
+      ${hint}
+      <div style="display:flex;gap:8px;margin:0 14px 12px;flex-wrap:wrap">
+        ${progIds.map((pid,i)=>{const pr=PROGS[pid];const cur=prog.id===pid;
+          const dateArg=selDate?`,new Date('${selDate.toISOString()}')`:',undefined';
+          return`<div style="flex:1;min-width:120px;background:${cur?'var(--adim)':'var(--s1)'};border:1px solid ${cur?'rgba(249,115,22,.4)':'var(--border)'};border-radius:10px;padding:10px 12px">
+            <div style="font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:${cur?'var(--accent)':'var(--dim)'};margin-bottom:4px">SÉANCE ${i+1}${cur?' · SUIVANTE':''}</div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:8px">${pr?pr.label:pid}</div>
+            <button class="btn bp bsm bw" ${A.selDay?'':`disabled style="opacity:.4;pointer-events:none"`} onclick="startSession('${pid}'${dateArg})">▶ Démarrer</button>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } else if(prog){
+    const dateArg=selDate?`,new Date('${selDate.toISOString()}')`:',undefined';
+    startHtml=`<div style="margin:10px 14px 12px">${hint}<button class="btn bp bw" ${A.selDay?'':`disabled style="opacity:.4;pointer-events:none"`} onclick="startSession(undefined${dateArg})">▶ DÉMARRER LA SÉANCE</button></div>`;
   }
 
   // PROG DETAIL
@@ -712,7 +827,7 @@ function renderProgramme(){
         </div>
       </div>
       ${calHtml}
-      ${altHtml}
+      ${startHtml}
       ${lv&&lv.promo?`<div class="promo-box"><div class="pt">📈 Pour passer au niveau suivant</div><p>${lv.promo}</p></div>`:''}
       ${detailHtml}
     </div>`;
@@ -722,24 +837,313 @@ function renderProgramme(){
 // ═══════════════════════════════ FÉMININ RENDERS ═══════════════════════════════
 let viewZoneF=null;
 
+function renderProgrammeFReequil(sc,p){
+  const allSs=getSessions().filter(s=>s.programId&&s.programId.startsWith('reequil'));
+  const variant=p.reequil.variant||'moinsMot';
+  const rp=REEQUIL_F[variant];
+  const femBadge=`<span class="fem-badge" style="font-size:9px;padding:2px 7px;background:var(--adim);border:1px solid rgba(232,121,160,.25);border-radius:10px;color:var(--accent);font-weight:800;letter-spacing:1.5px">FÉMININ</span>`;
+
+  const startMonday=getMonday(new Date(p.reequil.startDate));
+  const endDate=reequilEndDate();
+  const today=new Date();
+  const msPerWeek=7*86400000;
+  const endMonday=getMonday(endDate);
+  const totalWeeks=Math.max(1,Math.round((endMonday-startMonday)/msPerWeek)+1);
+  const todayMonday=getMonday(today);
+  const curWeekIdx=Math.min(totalWeeks-1,Math.max(0,Math.round((todayMonday-startMonday)/msPerWeek)));
+
+  if(A.reequilWeek===null||A.reequilWeek===undefined)A.reequilWeek=curWeekIdx;
+  const wi=Math.max(0,Math.min(A.reequilWeek,totalWeeks-1));
+
+  const weekStart=new Date(startMonday.getTime()+wi*msPerWeek);
+  const weekEnd=new Date(weekStart.getTime()+7*86400000-1);
+  const isCurWeek=wi===curWeekIdx;
+  const isPast=weekEnd<today;
+
+  const weekSess=allSs.filter(s=>{const d=new Date(s.date);return d>=weekStart&&d<=weekEnd;});
+  const freqMatch=rp.freq.match(/(\d+)/);const freqMin=freqMatch?parseInt(freqMatch[1]):3;
+
+  const dayNames=['L','M','Me','J','V','S','D'];
+  const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d;});
+  const weekRow=dayNames.map((dn,i)=>{
+    const d=weekDates[i];
+    const isToday=d.toDateString()===today.toDateString();
+    const isDone=weekSess.some(s=>new Date(s.date).toDateString()===d.toDateString());
+    const isFuture=d>today&&!isToday;
+    const canSel=isCurWeek&&!isDone&&!isFuture;
+    const isSel=A.selDay===d.toDateString();
+    let cls='ddot';
+    if(isDone)cls+=' done';
+    if(isToday)cls+=' today';
+    if(canSel)cls+=' train';
+    if(isSel)cls+=' sel';
+    const dot=`<div class="${cls}" ${canSel?`onclick="selectDay('${d.toDateString()}')" style="cursor:pointer"`:''}>${isDone?'✓':isSel?'▶':''}</div>`;
+    return`<div class="dc"><div class="dn">${dn}</div>${dot}</div>`;
+  }).join('');
+
+  const weekTabs=Array.from({length:totalWeeks},(_,i)=>{
+    const isCur=i===curWeekIdx;const isSel=i===wi;
+    return`<div class="wtab${isSel?' on':''}${isCur?' wcur':''}" style="min-width:36px;flex:0 0 auto" onclick="A.reequilWeek=${i};renderProgramme()">S${i+1}</div>`;
+  }).join('');
+
+  const dateRange=`${weekStart.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} – ${weekEnd.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}`;
+  const sessLabel=`${weekSess.length} séance${weekSess.length!==1?'s':''} · Objectif : ${rp.freq}`;
+  const wkLabel=isCurWeek?'Semaine en cours':`Semaine ${wi+1} / ${totalWeeks}`;
+  const daysLeft=reequilDaysLeft();
+  const endStr=endDate?endDate.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'';
+
+  const selDate=A.selDay?new Date(A.selDay):null;
+  const selInWeek=selDate&&selDate>=weekStart&&selDate<=weekEnd;
+  let weekAction='';
+  if(isCurWeek){
+    const hint=`<div style="font-size:11px;color:var(--dim);margin-bottom:8px">${selInWeek?`Séance du ${selDate.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'short'})}`:'Appuie sur un jour pour le sélectionner'}</div>`;
+    const dateArg=selDate?`,new Date('${selDate.toISOString()}')`:',undefined';
+    weekAction=`<div style="padding:8px 14px 4px">${hint}<button class="btn bp bw" ${selInWeek?'':`disabled style="opacity:.4;pointer-events:none"`} onclick="startSession(undefined${dateArg})">▶ DÉMARRER LA SÉANCE</button></div><div style="padding:2px 14px 12px"><button class="btn bg bsm bw" ${selInWeek?'':`disabled style="opacity:.4;pointer-events:none"`} onclick="startSession(undefined${dateArg},true)">Passer le rééquilibrage → Renfo seulement</button></div>`;
+  } else if(isPast&&weekSess.length<freqMin){
+    weekAction=`<div style="padding:8px 14px 4px"><button class="btn bs bsm bw" onclick="rattrapReequilSess(${weekStart.getTime()})">+ Rattraper une séance</button></div>`;
+  }
+
+  sc.innerHTML=`
+    <div class="tb"><h1>PROGRAMME</h1><div class="sp"></div>${femBadge}</div>
+    <div class="sa">
+      <div class="lv-hero">
+        <div class="lvh-top">
+          <div class="n" style="color:var(--accent);font-size:10px;letter-spacing:3px">RÉÉQUILIBRAGE</div>
+          <h2>${rp.label}</h2>
+          <p>Fin le ${endStr} · ${daysLeft} jours restants</p>
+        </div>
+        <div class="lvh-bot">
+          <span class="chip cac">${rp.freq}</span>
+          <span class="chip">${allSs.length} séances faites</span>
+        </div>
+      </div>
+      <div class="wcal">
+        <div class="wch"><h3>Planning hebdo</h3><span>${wkLabel}</span></div>
+        <div class="wtabs" style="overflow-x:auto;flex-wrap:nowrap;scroll-behavior:smooth">${weekTabs}</div>
+        <div class="week-row">${weekRow}</div>
+        <div style="padding:4px 14px 10px;font-size:12px;color:var(--dim)">${dateRange} · ${sessLabel}</div>
+        ${weekAction}
+      </div>
+      <div style="margin:8px 14px 4px;padding:14px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r2)">
+        <div style="font-size:12px;font-weight:800;letter-spacing:1px;margin-bottom:4px">Prête pour le programme ?</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:10px;line-height:1.5">Tu peux passer le rééquilibrage et commencer directement ton profil et le programme de musculation.</div>
+        <button class="btn bg bsm bw" onclick="confirmSkipReequil()">Passer le rééquilibrage → Choisir mon profil</button>
+      </div>
+      <div style="height:10px"></div>
+    </div>`;
+
+  // Scroll selected tab into view
+  requestAnimationFrame(()=>{
+    const sel=sc.querySelector('.wtab.on');
+    if(sel)sel.scrollIntoView({block:'nearest',inline:'center',behavior:'smooth'});
+  });
+}
+
+function renderProgrammeFProfile(sc,p){
+  const pf=PROFILE_F_MAP[p.profileId];if(!pf){renderProgrammeF();return;}
+  const femBadge=`<span class="fem-badge" style="font-size:9px;padding:2px 7px;background:var(--adim);border:1px solid rgba(232,121,160,.25);border-radius:10px;color:var(--accent);font-weight:800;letter-spacing:1.5px">FÉMININ</span>`;
+
+  const today=new Date();
+  const todayMonday=getMonday(today);
+  // A.profileWeek: 0=current, -1=last, etc.
+  if(A.profileWeek===undefined)A.profileWeek=0;
+  const weekStart=new Date(todayMonday.getTime()+A.profileWeek*7*86400000);
+  const weekEnd=new Date(weekStart.getTime()+7*86400000-1);
+  const isCurWeek=A.profileWeek===0;
+  const isPast=weekEnd<today;
+
+  const allSs=getSessions().filter(s=>s.profileId===p.profileId);
+  const weekSess=allSs.filter(s=>{const d=new Date(s.date);return d>=weekStart&&d<=weekEnd;});
+
+  const dayNames=['L','M','Me','J','V','S','D'];
+  const zoneColors={bas:'#e879a0',poitrine:'#38bdf8',bras:'#34d399',ventre:'#a78bfa'};
+
+  const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d;});
+
+  const weekRow=dayNames.map((dn,i)=>{
+    const d=weekDates[i];
+    const day=pf.days[i];
+    const isToday=d.toDateString()===today.toDateString();
+    const isDone=weekSess.some(s=>new Date(s.date).toDateString()===d.toDateString());
+    const isFuture=d>today&&!isToday;
+    const isWorkout=day.type==='workout'||day.type==='mi_only';
+    const canSel=isCurWeek&&isWorkout&&!isDone&&!isFuture;
+    const isSel=A.selDay===d.toDateString();
+
+    let cls='ddot';
+    if(isDone)cls+=' done';
+    if(isToday)cls+=' today';
+    if(canSel)cls+=' train';
+    if(isSel)cls+=' sel';
+
+    let dotContent=isDone?'✓':isSel?'▶':day.type==='endurance'?'E':day.type==='repos'?'':day.type==='mi_only'?'♥':'';
+    const dot=`<div class="${cls}" ${canSel?`onclick="selectDay('${d.toDateString()}')" style="cursor:pointer"`:''}>${dotContent}</div>`;
+
+    // Zone chips below dot for workout days
+    let zoneChips='';
+    if(isWorkout&&day.type==='workout'){
+      zoneChips=`<div style="display:flex;flex-direction:column;align-items:center;gap:1px;margin-top:2px">`;
+      day.zones.forEach(zId=>{
+        zoneChips+=`<div style="width:6px;height:6px;border-radius:50%;background:${zoneColors[zId]||'var(--dim)'}"></div>`;
+      });
+      zoneChips+=`</div>`;
+    }
+    return`<div class="dc"><div class="dn">${dn}</div>${dot}${zoneChips}</div>`;
+  }).join('');
+
+  const dateRange=`${weekStart.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} – ${weekEnd.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}`;
+  const selDate=A.selDay?new Date(A.selDay):null;
+  const selInWeek=selDate&&selDate>=weekStart&&selDate<=weekEnd;
+  const selDayIdx=selDate?(selDate.getDay()+6)%7:-1;
+  const selDayDef=selDayIdx>=0?pf.days[selDayIdx]:null;
+
+  // Zone legend for selected day
+  let selZonesHtml='';
+  if(selInWeek&&selDayDef&&selDayDef.type==='workout'){
+    selZonesHtml=`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">`;
+    selDayDef.zones.forEach(zId=>{
+      const z=ZONE_MAP[zId];if(!z)return;
+      selZonesHtml+=`<span class="chip" style="background:${z.color}22;color:${z.color};border-color:${z.color}44">${z.icon} ${z.label}</span>`;
+    });
+    selZonesHtml+=`<span class="chip" style="background:#e879a020;color:#e879a0">♥ Intimité</span><span class="chip">🧘 Souplesse</span><span class="chip">🫁 Diaphragme</span>`;
+    selZonesHtml+=`</div>`;
+  }
+
+  let weekAction='';
+  if(isCurWeek){
+    const hint=`<div style="font-size:11px;color:var(--dim);margin-bottom:8px">${selInWeek?`Séance du ${selDate.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'short'})}`:'Appuie sur un jour entraînement pour le sélectionner'}</div>`;
+    const dateArg=selDate?`,new Date('${selDate.toISOString()}')`:',undefined';
+    weekAction=`<div style="padding:8px 14px 4px">${hint}${selZonesHtml}<div style="margin-top:8px"><button class="btn bp bw" ${selInWeek?'':`disabled style="opacity:.4;pointer-events:none"`} onclick="startSession(undefined${dateArg})">▶ DÉMARRER LA SÉANCE</button></div></div>`;
+  } else if(isPast){
+    weekAction=`<div style="padding:8px 14px 4px"><button class="btn bs bsm bw" onclick="rattrapProfileSess(${weekStart.getTime()})">+ Rattraper une séance</button></div>`;
+  }
+
+  // Zone levels summary
+  const zoneLevels=p.zoneLevels||{};
+  const zonesInProfile=new Set();
+  pf.days.forEach(d=>{if(d.zones)d.zones.forEach(z=>zonesInProfile.add(z));});
+  const lvlChips=Array.from(zonesInProfile).map(zId=>{
+    const z=ZONE_MAP[zId];if(!z)return'';
+    const lvlId=zoneLevels[zId]||z.levels[0].id;
+    const lvl=z.levels.find(l=>l.id===lvlId)||z.levels[0];
+    return`<span class="chip" style="color:${z.color};border-color:${z.color}44">${z.icon} ${lvl.label}</span>`;
+  }).join('');
+
+  sc.innerHTML=`
+    <div class="tb"><h1>PROGRAMME</h1><div class="sp"></div>${femBadge}</div>
+    <div class="sa">
+      <div class="lv-hero">
+        <div class="lvh-top">
+          <div class="n" style="color:var(--accent);font-size:10px;letter-spacing:3px">PROGRAMME</div>
+          <h2>${pf.label}</h2>
+          <p>${pf.desc}</p>
+        </div>
+        <div class="lvh-bot">
+          <span class="chip cac">${pf.freq}</span>
+          <span class="chip">${allSs.length} séances faites</span>
+        </div>
+      </div>
+      <div class="wcal">
+        <div class="wch">
+          <h3>Semaine</h3>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="btn bs bsm" onclick="A.profileWeek--;A.selDay=null;renderProgramme()" style="padding:3px 8px">‹</button>
+            <span style="font-size:11px">${isCurWeek?'En cours':isPast?dateRange:dateRange}</span>
+            <button class="btn bs bsm" onclick="A.profileWeek++;A.selDay=null;renderProgramme()" style="padding:3px 8px${A.profileWeek>=0?';opacity:.3;pointer-events:none':''}">›</button>
+          </div>
+        </div>
+        <div class="week-row">${weekRow}</div>
+        <div style="padding:4px 14px 6px;font-size:12px;color:var(--dim)">${dateRange} · ${weekSess.length} séance${weekSess.length!==1?'s':''} cette semaine</div>
+        ${weekAction}
+      </div>
+      <div class="slab">NIVEAUX PAR ZONE</div>
+      <div style="padding:0 14px 8px">
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${lvlChips||'<span style="color:var(--dim);font-size:12px">Non définis</span>'}</div>
+        <button class="btn bs bsm bw" onclick="A.showProfileZoneLevels=!A.showProfileZoneLevels;renderProgramme()">⚙ Modifier les niveaux</button>
+      </div>
+      ${A.showProfileZoneLevels?renderProfileZoneLevelsHtml(p,zonesInProfile):''}
+      <div class="slab">PROFIL</div>
+      <div style="padding:0 14px 14px">
+        <button class="btn bs bsm bw" onclick="A.showProfilePicker=!A.showProfilePicker;renderProgramme()">Changer de profil</button>
+        ${A.showProfilePicker?renderProfilePickerHtml(p.profileId):''}
+      </div>
+    </div>`;
+}
+
+function renderProfileZoneLevelsHtml(p,zonesInProfile){
+  const zoneLevels=p.zoneLevels||{};
+  let h=`<div class="card card0" style="margin:0 14px 14px">`;
+  Array.from(zonesInProfile).forEach(zId=>{
+    const z=ZONE_MAP[zId];if(!z)return;
+    const curLvlId=zoneLevels[zId]||z.levels[0].id;
+    h+=`<div style="padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:800;color:${z.color};letter-spacing:1px;margin-bottom:6px">${z.icon} ${z.label.toUpperCase()}</div>
+      <div style="display:flex;flex-direction:column;gap:4px">`;
+    z.levels.forEach(l=>{
+      const isCur=l.id===curLvlId;
+      h+=`<div class="${isCur?'lvo sel':'lvo'}" onclick="setZoneLevelProfile('${zId}','${l.id}')" style="padding:8px 12px">
+        <div class="n" style="color:${z.color}">${l.label.charAt(0)}</div>
+        <div class="i"><div class="na">${l.label}</div><div class="de">${l.freq}</div></div>
+        <div class="ck">${isCur?'✓':''}</div>
+      </div>`;
+    });
+    const curLvl=z.levels.find(l=>l.id===curLvlId);
+    if(curLvl?.promo)h+=`<div style="font-size:11px;color:var(--dim);padding:6px 4px 2px">📈 ${curLvl.promo}</div>`;
+    h+=`</div></div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+
+function renderProfilePickerHtml(curId){
+  let h=`<div class="card card0" style="margin-top:8px">`;
+  PROFILES_F.forEach(pf=>{
+    const isCur=pf.id===curId;
+    h+=`<div class="${isCur?'lvo sel':'lvo'}" onclick="selectProfileF('${pf.id}')" style="padding:10px 14px">
+      <div class="n" style="color:var(--accent);font-size:11px;font-weight:900">${pf.label.split(' ')[1]||'M'}</div>
+      <div class="i"><div class="na">${pf.label}</div><div class="de">${pf.freq}</div><div class="de" style="margin-top:2px;white-space:normal">${pf.desc}</div></div>
+      <div class="ck">${isCur?'✓':''}</div>
+    </div>`;
+  });
+  h+=`</div>`;
+  return h;
+}
+
+function rattrapProfileSess(weekStartMs){
+  const p=getProfile();if(!p?.profileId)return;
+  const pf=PROFILE_F_MAP[p.profileId];if(!pf)return;
+  const weekStart=new Date(weekStartMs);
+  const weekEnd=new Date(weekStartMs+7*86400000-1);
+  const ss=getSessions();
+  const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d;});
+  const usedDates=ss.filter(s=>{const d=new Date(s.date);return d>=weekStart&&d<=weekEnd;}).map(s=>new Date(s.date).toDateString());
+  const freeDay=weekDates.find(d=>!usedDates.includes(d.toDateString()))||weekDates[0];
+  const date=new Date(freeDay);date.setHours(12,0,0,0);
+  const dayIdx=(freeDay.getDay()+6)%7;
+  const prog=buildProfileSlots(dayIdx)||{id:'profile_rattrap',label:'Séance rattrapée',slots:[]};
+  const saved={
+    id:uid(),date:date.toISOString(),profileId:p.profileId,
+    startedAt:date.toISOString(),endedAt:date.toISOString(),
+    exercises:prog.slots.map(sl=>({exoId:sl.exo,sets:[]})),
+    complete:true,rattrapee:true,durationSeconds:0,feeling:3
+  };
+  ss.unshift(saved);S.sessions=ss;debouncedPush();renderProgramme();
+}
+
 function renderProgrammeF(){
   const sc=document.getElementById('screen-programme');
   if(viewZoneF){renderZoneDetailF(sc);return;}
-  const p=getProfile();const ss=getSessions();
-  let h=`<div class="tb"><h1>ZONES</h1><div class="sp"></div><span class="fem-badge" style="font-size:9px;padding:2px 7px;background:var(--adim);border:1px solid rgba(232,121,160,.25);border-radius:10px;color:var(--accent);font-weight:800;letter-spacing:1.5px">FÉMININ</span></div><div class="sa">`;
-  h+=`<div style="padding:14px 14px 6px"><div style="font-size:20px;font-weight:900">Tes zones</div><div style="font-size:12px;color:var(--dim);margin-top:3px">Programme progressif par partie du corps</div></div>`;
-  ZONES.forEach(z=>{
-    const zs=ss.filter(s=>s.zoneId===z.id);
-    const isCur=p&&p.zoneId===z.id;
-    const li=isCur?z.levels.findIndex(l=>l.id===p.levelId):-1;
-    const pct=z.levels.length?Math.round(((li+1)/z.levels.length)*100):0;
-    h+=`<div class="zcard" onclick="viewZoneF='${z.id}';renderProgramme()" style="${isCur?'border-color:'+z.color:''}">
-      <div class="zcard-top"><div class="zcard-icon" style="background:${z.color}22;color:${z.color}">${z.icon}</div>
-      <div class="zcard-body"><div class="zcard-title">${z.label}</div><div class="zcard-sub">${z.sub} · ${zs.length} séance${zs.length!==1?'s':''}</div></div>
-      <div class="zcard-arrow">›</div></div>
-      ${isCur?`<div class="zcard-prog"><div class="zcard-prog-fill" style="width:${pct}%;background:${z.color}"></div></div>`:''}
-    </div>`;
-  });
+  const p=getProfile();
+  if(isReequilActive()){renderProgrammeFReequil(sc,p);return;}
+  if(p?.profileId){if(A.profileWeek===undefined)A.profileWeek=0;renderProgrammeFProfile(sc,p);return;}
+  const femBadge=`<span class="fem-badge" style="font-size:9px;padding:2px 7px;background:var(--adim);border:1px solid rgba(232,121,160,.25);border-radius:10px;color:var(--accent);font-weight:800;letter-spacing:1.5px">FÉMININ</span>`;
+  let h=`<div class="tb"><h1>PROGRAMME</h1><div class="sp"></div>${femBadge}</div><div class="sa">`;
+  h+=`<div class="lv-hero"><div class="lvh-top">
+    <div class="n" style="color:var(--accent);font-size:10px;letter-spacing:3px">PROGRAMME</div>
+    <h2>Choisis ton profil</h2>
+    <p>Chaque profil combine toutes tes zones sur un planning hebdomadaire, selon ton objectif (p. 39–43).</p>
+  </div></div>`;
+  h+=renderProfilePickerHtml(null);
   h+=`</div>`;sc.innerHTML=h;
 }
 
@@ -762,20 +1166,29 @@ function renderZoneDetailF(sc){
   // Show current level exercises
   const cur=p&&p.zoneId===z.id?z.levels.find(l=>l.id===p.levelId):z.levels[0];
   if(cur){
+    const curSlots=applyExoUpgrades(cur.slots,cur.id);
     h+=`<div class="slab">EXERCICES — ${cur.label}</div><div class="card card0">`;
-    cur.slots.forEach((s,i)=>{
+    curSlots.forEach((s,i)=>{
       const exo=getExo(s.exo);
-      h+=`<div class="pdr"><div class="pdr-top"><div class="pdr-idx">${i+1}</div><div class="pdr-name">${exo?exo.name:s.exo}</div>
+      const origSlot=cur.slots[i];
+      const upgraded=origSlot&&origSlot.exo!==s.exo;
+      h+=`<div class="pdr"><div class="pdr-top"><div class="pdr-idx">${i+1}</div><div class="pdr-name">${exo?exo.name:s.exo}${upgraded?` <span style="font-size:10px;color:var(--ok);font-weight:800">✓ passé à ${s.exo.replace('f_','').toUpperCase()}</span>`:''}</div>
         <div class="pdr-sets">${s.sets||'—'}×${s.reps||'max'}</div></div>
         <div class="pdr-meta"><span class="chip">${rLbl(s.rh)}</span><span class="chip">⏱ ${s.r1}s</span>${s.note?`<span class="chip cac">${s.note}</span>`:''}</div></div>`;
     });
     h+=`</div>`;
+    if(cur.promo){
+      h+=`<div class="promo-box"><div class="pt">📈 Pour passer au niveau suivant</div><p>${cur.promo}</p></div>`;
+    }
+  }
+  if(p&&p.zoneId===z.id&&p.levelId){
+    h+=`<div style="margin:10px 14px 14px"><button class="btn bp bw" onclick="startSession()">▶ DÉMARRER LA SÉANCE</button></div>`;
   }
   h+=`</div>`;sc.innerHTML=h;
 }
 
 function selLevelF(zoneId,levelId){
-  const p=getProfile()||{};p.zoneId=zoneId;p.levelId=levelId;S.profile=p;
+  const p=getProfile()||{};p.zoneId=zoneId;p.levelId=levelId;delete p.profileId;S.profile=p;
   renderProgramme();renderSeance();
 }
 
@@ -829,7 +1242,7 @@ function renderIdleF(){
     h+=`<div style="padding:0 14px 4px;display:flex;gap:8px">
       <button class="btn bs bsm" onclick="toggleReequilOpt()" style="flex:1">Transversaux : Option ${p.reequil.transOpt||1} ↔</button>
     </div>`;
-    h+=`<div style="padding:0 14px 14px"><button class="btn bg bsm bw" onclick="endReequil()">Terminer le rééquilibrage</button></div>`;
+    h+=`<div style="padding:0 14px 14px"><button class="btn bg bsm bw" onclick="confirmSkipReequil()">Terminer le rééquilibrage → Profil</button></div>`;
 
   } else {
     const z=ZONE_MAP[p.zoneId];
@@ -865,24 +1278,47 @@ function renderMoiF(){
     <div class="stat"><div class="v">${totalReps}</div><div class="l">Reps</div></div></div>`;
 
   h+=renderTestCardF();
-  h+=`<div class="slab">ZONE ACTIVE</div>`;
-  ZONES.forEach(z=>{
-    const isCur=p&&p.zoneId===z.id;
-    h+=`<div class="card" style="cursor:pointer;${isCur?'border-color:'+z.color+';':''}padding:12px 14px;display:flex;align-items:center;gap:10px" onclick="selLevelF('${z.id}','${z.levels[0].id}');renderMoi();">
-      <div style="font-size:20px">${z.icon}</div><div style="flex:1"><div style="font-weight:700">${z.label}</div>
-      <div style="font-size:11px;color:var(--dim)">${z.sub}</div></div>
-      ${isCur?'<span class="chip cac">Actif</span>':''}
+
+  // ── Profil d'entraînement ──
+  h+=`<div class="slab">PROFIL D'ENTRAÎNEMENT</div>`;
+  if(p?.profileId){
+    const pf=PROFILE_F_MAP[p.profileId];
+    const zonesInProfile=new Set();
+    pf?.days.forEach(d=>{if(d.zones)d.zones.forEach(z=>zonesInProfile.add(z));});
+    h+=`<div class="card" style="border-color:rgba(232,121,160,.3);padding:12px 14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="flex:1"><div style="font-size:15px;font-weight:900">${pf?pf.label:'Profil'}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px">${pf?pf.freq:''}</div></div>
+        <button class="btn bs bsm" onclick="A.showProfilePicker=!A.showProfilePicker;renderMoi()">Changer</button>
+      </div>
+      ${A.showProfilePicker?renderProfilePickerHtml(p.profileId):''}
+      <div style="margin-top:8px">
+        <button class="btn bs bsm bw" onclick="A.showProfileZoneLevels=!A.showProfileZoneLevels;renderMoi()">⚙ Niveaux par zone ${A.showProfileZoneLevels?'▲':'▼'}</button>
+      </div>
+      ${A.showProfileZoneLevels?renderProfileZoneLevelsHtml(p,zonesInProfile):''}
     </div>`;
-  });
+  } else {
+    h+=`<div class="card" style="border-color:rgba(232,121,160,.2);padding:12px 14px">
+      <div style="font-size:12px;color:var(--dim);margin-bottom:10px;line-height:1.5">
+        Combine toutes tes zones dans un planning hebdomadaire issu du livre (p. 39–43).
+        Chaque profil s'adapte à ton objectif.
+      </div>
+      <button class="btn bp bsm bw" onclick="A.showProfilePicker=!A.showProfilePicker;renderMoi()">Choisir mon profil</button>
+      ${A.showProfilePicker?renderProfilePickerHtml(null):''}
+    </div>`;
+  }
+
 
   if(ss.length>0){
     h+=`<div class="slab">HISTORIQUE</div>`;
     ss.slice(0,20).forEach(sess=>{
-      const z=ZONE_MAP[sess.zoneId];const lv=z?z.label:'Séance';
+      const pf=sess.profileId?PROFILE_F_MAP[sess.profileId]:null;
+      const z=ZONE_MAP[sess.zoneId];
+      const lv=pf?pf.label:z?z.label:'Séance';
       const reps=sess.exercises?sess.exercises.reduce((a,e)=>a+(e.sets||[]).reduce((b,st)=>b+st.reps,0),0):0;
       h+=`<div class="si"><div class="si-hdr">
         <div class="si-date"><div class="d">${fDay(sess.date)}</div><div class="m">${fMon(sess.date)}</div></div>
-        <div class="si-info"><div class="si-prog">${lv}</div><div class="si-meta">${sess.durationSeconds?fmtS(sess.durationSeconds):''} · ${reps} reps</div></div>
+        <div class="si-info"><div class="si-prog">${lv}${sess.rattrapee?' · Rattrapée':''}</div><div class="si-meta">${sess.durationSeconds?fmtS(sess.durationSeconds):''} · ${reps} reps</div></div>
         <div class="si-feel">${feelE(sess.feeling||3)}</div></div></div>`;
     });
   }
@@ -1621,16 +2057,16 @@ function renderTestCardF(){
 
 // ═══════════════════════════════ NAV ═══════════════════════════════
 function switchTab(t){
+  if(t==='seance')t='programme';
   A.tab=t;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.tbn').forEach(b=>b.classList.remove('on'));
   document.getElementById('screen-'+t).classList.add('active');
-  document.querySelector(`.tbn[data-tab="${t}"]`).classList.add('on');
+  document.querySelector(`.tbn[data-tab="${t}"]`)?.classList.add('on');
   renderTab(t);
 }
 function renderTab(t){
-  if(t==='seance')renderSeance();
-  else if(t==='programme')renderProgramme();
+  if(t==='programme')renderProgramme();
   else if(t==='souplesse')renderSouplesse();
   else if(t==='moi')renderMoi();
 }
@@ -1731,15 +2167,143 @@ function reequilEndDate(){
   return end;
 }
 function endReequil(){
-  if(!confirm('Terminer le rééquilibrage et passer au programme zone ?'))return;
   const p=getProfile();if(!p)return;
   if(p.reequil)p.reequil.active=false;
-  S.profile=p;renderSeance();
+  S.profile=p;renderProgramme();renderMoi();
+}
+function confirmSkipReequil(){
+  const sc=document.getElementById('screen-programme');
+  const femBadge=`<span class="fem-badge" style="font-size:9px;padding:2px 7px;background:var(--adim);border:1px solid rgba(232,121,160,.25);border-radius:10px;color:var(--accent);font-weight:800;letter-spacing:1.5px">FÉMININ</span>`;
+  sc.innerHTML=`
+    <div class="tb"><h1>PROGRAMME</h1><div class="sp"></div>${femBadge}</div>
+    <div class="sa" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:0;padding:0 24px">
+      <div style="font-size:48px;margin-bottom:16px">🏋️</div>
+      <div style="font-size:20px;font-weight:900;letter-spacing:1px;margin-bottom:8px;text-align:center">Passer le rééquilibrage ?</div>
+      <div style="font-size:13px;color:var(--dim);margin-bottom:12px;text-align:center;line-height:1.6">Le suivi du rééquilibrage sera désactivé.<br>Tu pourras choisir ton profil et commencer<br>le programme de musculation.</div>
+      <div style="font-size:12px;color:var(--warn);margin-bottom:28px;text-align:center;line-height:1.5;background:rgba(234,179,8,.07);border:1px solid rgba(234,179,8,.2);border-radius:8px;padding:8px 12px">Le rééquilibrage reste recommandé si tu es<br>débutante ou si tu as des déséquilibres musculaires.</div>
+      <button class="btn bp bw" style="width:100%;margin-bottom:12px" onclick="endReequil()">Oui, passer au profil →</button>
+      <button class="btn bg bw" style="width:100%" onclick="renderProgramme()">← Continuer le rééquilibrage</button>
+    </div>`;
 }
 function toggleReequilOpt(){
   const p=getProfile();if(!p?.reequil)return;
   p.reequil.transOpt=(p.reequil.transOpt||1)===1?2:1;
   S.profile=p;renderSeance();
+}
+
+function rattrapReequilSess(weekStartMs){
+  const p=getProfile();if(!p?.reequil)return;
+  const prog=getCurProg();if(!prog)return;
+  const variant=p.reequil.variant||'moinsMot';const rp=REEQUIL_F[variant];
+  const weekStart=new Date(weekStartMs);
+  const weekEnd=new Date(weekStartMs+7*86400000-1);
+  const ss=getSessions();
+  const weekDates=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);return d;});
+  const usedDates=ss.filter(s=>{const d=new Date(s.date);return d>=weekStart&&d<=weekEnd;}).map(s=>new Date(s.date).toDateString());
+  const freeDay=weekDates.find(d=>!usedDates.includes(d.toDateString()))||weekDates[0];
+  const date=new Date(freeDay);date.setHours(12,0,0,0);
+  const saved={
+    id:uid(),date:date.toISOString(),programId:rp.id,
+    startedAt:date.toISOString(),endedAt:date.toISOString(),
+    exercises:prog.slots.map(sl=>({exoId:sl.exo,sets:[]})),
+    complete:true,rattrapee:true,durationSeconds:0,feeling:3
+  };
+  ss.unshift(saved);S.sessions=ss;
+  debouncedPush();renderProgramme();
+}
+
+// ═══════════════════════════════ FEMME: PROFIL ═══════════════════════════════
+function hasProfileF(){return isF()&&!!getProfile()?.profileId;}
+
+function buildProfileSlots(dayIdx){
+  const p=getProfile();if(!p?.profileId)return null;
+  const pf=PROFILE_F_MAP[p.profileId];if(!pf)return null;
+  const day=pf.days[dayIdx];
+  if(!day||day.type==='repos'||day.type==='endurance')return null;
+  const slots=[];
+  if(day.type==='mi_only'){
+    slots.push({exo:'f_MI',sets:1,reps:20,rh:'normal',r1:0,r2:0});
+    slots.push({exo:'f_DI',sets:1,reps:null,rh:'normal',r1:0,r2:0,note:'3 min de respiration abdominale',dur:180});
+    return{id:'profile_mi_'+dayIdx,label:'Intimité',slots,profileId:p.profileId};
+  }
+  const zoneLevels=p.zoneLevels||{};
+  day.zones.forEach(zId=>{
+    const z=ZONE_MAP[zId];if(!z)return;
+    const lvlId=zoneLevels[zId]||z.levels[0].id;
+    const lvl=z.levels.find(l=>l.id===lvlId)||z.levels[0];
+    if(lvl)slots.push(...applyExoUpgrades(lvl.slots,lvl.id));
+  });
+  slots.push({exo:'f_MI',sets:1,reps:20,rh:'normal',r1:0,r2:0});
+  slots.push({exo:'f_DI',sets:1,reps:null,rh:'normal',r1:0,r2:0,note:'3 min de respiration abdominale',dur:180});
+  return{id:'profile_day_'+dayIdx,label:pf.label,slots,profileId:p.profileId};
+}
+
+function selectProfileF(id){
+  const p=getProfile()||{};
+  p.profileId=id;
+  if(!p.zoneLevels){
+    p.zoneLevels={};
+    ZONES.forEach(z=>{p.zoneLevels[z.id]=z.levels[0].id;});
+  }
+  A.profileWeek=0;A.showProfilePicker=false;A.showProfileZoneLevels=false;
+  S.profile=p;renderMoi();renderProgramme();
+}
+
+function setZoneLevelProfile(zoneId,levelId){
+  const p=getProfile();if(!p)return;
+  if(!p.zoneLevels)p.zoneLevels={};
+  p.zoneLevels[zoneId]=levelId;
+  S.profile=p;
+  if(A.tab==='moi')renderMoi();else renderProgramme();
+}
+
+// ═══════════════════════════════ FEMME: exo upgrades (B→B1, etc.) ═══════════════════════════════
+// Rules: {levelId, exo, target, minReps} — upgrade exo→target when first set ≥ minReps
+const EXO_UPGRADE_RULES=[
+  {levelId:'bas_prep',exo:'f_B',target:'f_B1',minReps:25,
+   msg:'Tu as atteint 25 reps sur l\'exercice B. À partir de maintenant, B est remplacé par B1 dans tes séances.'},
+  {levelId:'bas_n1',exo:'f_B',target:'f_B1',minReps:10,
+   msg:'Tu as atteint 6×10 reps sur l\'exercice B. À partir de maintenant, B est remplacé par B1. La 1ère séance repart à 6×5 reps.'},
+];
+
+function applyExoUpgrades(slots,levelId){
+  const p=getProfile();const up=p?.exoUpgrades?.[levelId];if(!up)return slots;
+  return slots.map(s=>up[s.exo]?{...s,exo:up[s.exo]}:s);
+}
+
+function checkAndSaveExoUpgrades(sess){
+  if(!isF())return false;
+  const p=getProfile();if(!p)return false;
+  const basLevel=p.profileId?(p.zoneLevels?.bas||'bas_prep'):(p.zoneId==='bas'?p.levelId:null);
+  let changed=false;
+  const exoUp={...(p.exoUpgrades||{})};
+  EXO_UPGRADE_RULES.forEach(r=>{
+    const curLevel=r.levelId.startsWith('bas')?basLevel:null;
+    if(curLevel!==r.levelId)return;
+    if(exoUp[r.levelId]?.[r.exo])return;// already upgraded
+    const ex=sess.exercises.find(e=>e.exoId===r.exo);
+    if(!ex?.sets?.length)return;
+    if((ex.sets[0]?.reps||0)<r.minReps)return;
+    if(!exoUp[r.levelId])exoUp[r.levelId]={};
+    exoUp[r.levelId][r.exo]=r.target;
+    changed=true;
+  });
+  if(changed){p.exoUpgrades=exoUp;S.profile=p;debouncedPush();}
+  return changed;
+}
+
+function getUpgradePending(sess){
+  if(!isF())return null;
+  const p=getProfile();if(!p)return null;
+  const basLevel=p.profileId?(p.zoneLevels?.bas||'bas_prep'):(p.zoneId==='bas'?p.levelId:null);
+  return EXO_UPGRADE_RULES.find(r=>{
+    const curLevel=r.levelId.startsWith('bas')?basLevel:null;
+    if(curLevel!==r.levelId||p.exoUpgrades?.[r.levelId]?.[r.exo])return false;
+    const ex=sess?.exercises?.find(e=>e.exoId===r.exo);
+    return(ex?.sets?.[0]?.reps||0)>=r.minReps;
+  })||null;
+}
+function hasUpgradePending(sess){return!!getUpgradePending(sess);
 }
 
 // ═══════════════════════════════ FEMME: getCurProg override ═══════════════════════════════
@@ -1753,10 +2317,16 @@ function getCurProgF(){
     const slots=[...partie1,...REEQUIL_F.partie2];
     return{id:rp.id,label:rp.label,slots,isReequil:true,stretchNums:rp.stretchNums};
   }
+  if(p.profileId){
+    const sess=getActive();
+    const dayIdx=sess?.profileDayIdx??((A.selDay?new Date(A.selDay):new Date()).getDay()+6)%7;
+    return buildProfileSlots(dayIdx);
+  }
   if(!p.zoneId||!p.levelId)return null;
   const z=ZONE_MAP[p.zoneId];if(!z)return null;
   const lvl=z.levels.find(l=>l.id===p.levelId);
-  return lvl?{id:lvl.id,levelId:p.zoneId,label:lvl.label,slots:lvl.slots}:null;
+  if(!lvl)return null;
+  return{id:lvl.id,levelId:p.zoneId,label:lvl.label,slots:applyExoUpgrades(lvl.slots,lvl.id)};
 }
 
 // ═══════════════════════════════ ONBOARDING ═══════════════════════════════

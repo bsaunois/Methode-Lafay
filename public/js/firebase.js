@@ -153,7 +153,7 @@ if(FIREBASE_OK){
       <div class="login-sub">Méthode · Tracker</div>
       <div class="login-card">
         <p>Firebase n'a pas pu charger. Tu peux utiliser l'app en mode local (les données restent sur cet appareil).</p>
-        <button class="login-google" style="background:var(--accent);color:#000" onclick="showApp();const p=S.profileM||S.profileF;if(p){switchTab('seance');}else{document.getElementById('ob').classList.add('on');}">
+        <button class="login-google" style="background:var(--accent);color:#000" onclick="showApp();const p=S.profileM||S.profileF;if(p){switchTab('programme');}else{document.getElementById('ob').classList.add('on');}">
           📱 Continuer en mode local
         </button>
         <div style="font-size:11px;color:var(--dim);margin-top:12px;line-height:1.4">Pour la synchronisation Google, ouvre l'app depuis un serveur web (pas en fichier local).</div>

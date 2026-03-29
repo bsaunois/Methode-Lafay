@@ -4,6 +4,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #app{height:100%;display:flex;flex-direction:column;overflow:hidden}
 .screen{display:none;flex-direction:column;flex:1;overflow:hidden;position:relative}
 .screen.active{display:flex}
+#screen-seance{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;flex-direction:column;background:var(--bg);overflow-y:auto}
+#screen-seance.active{display:flex}
 .sa{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--tab)+14px)}
 .sa::-webkit-scrollbar{display:none}
 /* TOP BAR */
@@ -154,11 +156,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .wtabs{display:flex;padding:0 14px;border-bottom:1px solid var(--border)}
 .wtab{flex:1;text-align:center;padding:7px 0;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
 .wtab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.wtab.wcur:not(.on){color:var(--text);font-weight:900}
+.wtab.wcur:not(.on)::after{content:'·';display:block;font-size:16px;line-height:0;margin-top:3px;color:var(--accent)}
 .week-row{display:flex;gap:3px;padding:12px 14px 8px}
 .dc{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
 .dc .dn{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim)}
 .ddot{width:26px;height:26px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--dim)}
 .ddot.train{border-color:var(--accent);color:var(--accent);background:var(--adim)}
+.ddot.sel{border-color:var(--accent);background:var(--accent);color:#000;box-shadow:0 0 0 3px var(--adim)}
 .ddot.done{border-color:var(--ok);color:#000;background:var(--ok);font-size:12px}
 .ddot.today{border-color:var(--text);color:var(--text)}
 .ddot.train.today{box-shadow:0 0 0 3px rgba(249,115,22,.25)}
