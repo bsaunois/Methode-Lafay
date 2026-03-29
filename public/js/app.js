@@ -2326,6 +2326,12 @@ function getCurProgF(){
   const z=ZONE_MAP[p.zoneId];if(!z)return null;
   const lvl=z.levels.find(l=>l.id===p.levelId);
   if(!lvl)return null;
+  if(lvl.slotsOpt1&&lvl.slotsOpt2){
+    const n=getSessions().filter(s=>s.programId===lvl.id).length;
+    const slots=n%2===0?lvl.slotsOpt1:lvl.slotsOpt2;
+    const optLabel=n%2===0?'Option A':'Option B';
+    return{id:lvl.id,levelId:p.zoneId,label:`${lvl.label} · ${optLabel}`,slots:applyExoUpgrades(slots,lvl.id)};
+  }
   return{id:lvl.id,levelId:p.zoneId,label:lvl.label,slots:applyExoUpgrades(lvl.slots,lvl.id)};
 }
 
