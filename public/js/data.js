@@ -552,7 +552,7 @@ const ZONES=[
    ],
   },
 ]},
-{id:"poitrine",label:"Poitrine ferme",sub:"Pectoraux · Dorsaux",icon:"💪",color:"#38bdf8",
+{id:"poitrine",label:"Poitrine",sub:"Pectoraux · Dorsaux",icon:"💪",color:"#38bdf8",
  levels:[
   {id:"p_prep",label:"Préparation",desc:"2-4 semaines sur P et R",freq:"2-3×/sem",slots:[
     {exo:"f_P",sets:3,reps:null,rh:"normal",r1:90,r2:90,note:"Pompes, Objectif: 20-25 reps"},{exo:"f_R",sets:3,reps:null,rh:"normal",r1:90,r2:0},
@@ -576,7 +576,7 @@ const ZONES=[
     {exo:"f_U",sets:2,reps:null,rh:"normal",r1:90,r2:0},
   ]},
 ]},
-{id:"bras",label:"Bras galbés",sub:"Biceps · Triceps",icon:"✨",color:"#34d399",
+{id:"bras",label:"Bras",sub:"Biceps · Triceps",icon:"✨",color:"#34d399",
  levels:[
   {id:"b_n1",label:"Niveau 1 — Sportive",desc:"1 série par exercice, position débutante/sportive",freq:"3×/sem",
    promo:"Atteindre 20 reps à chaque exercice → passer au niveau 2",
@@ -631,10 +631,11 @@ const REEQUIL_F={
       {exo:'f_J', sets:1,reps:null,rh:'normal',r1:0,r2:60,note:'1 min de repos avant la partie 2'},
     ],
     slotsOpt2:[
-      {exo:'f_J1',sets:1,reps:null,rh:'normal',r1:0,r2:25},
-      {exo:'f_I2',sets:1,reps:null,rh:'normal',r1:0,r2:25},
-      {exo:'f_I5',sets:1,reps:null,rh:'normal',r1:0,r2:25},
-      {exo:'f_I6',sets:1,reps:null,rh:'normal',r1:0,r2:60,note:'1 min de repos avant la partie 2'},
+      {exo:"f_J1",sets:1,reps:null,rh:"normal",r1:0,r2:25},
+      {exo:"f_J2",sets:1,reps:null,rh:"normal",r1:0,r2:25},
+      {exo:"f_I",sets:1,reps:null,rh:"normal",r1:0,r2:25},
+      {exo:"f_I5",sets:1,reps:null,rh:"normal",r1:0,r2:25},
+      {exo:"f_I6",sets:1,reps:null,rh:"normal",r1:0,r2:60,note:"1 min de repos avant la 2e partie"},
     ]
   },
   plusMot:{
