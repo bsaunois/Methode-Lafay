@@ -560,11 +560,20 @@ function renderActive(){
   const tgtRep=tgt&&tgt[sess.setNum-1]!==undefined?tgt[sess.setNum-1]:sl.reps;
   const tgtLabel=tgtRep!==null&&tgtRep!==undefined?tgtRep+' reps':'MAX';
 
-  const exoList=prog.slots.map((s,i)=>{
-    const e=getExo(s.exo);
-    const done=i<sess.exoIdx,cur=i===sess.exoIdx;
-    return`<div class="er${done?' edone':cur?' ecur':''}"><span class="eid">${i+1}</span><div class="ebody"><div class="ename" style="font-size:13px">${e?e.name:s.exo}</div></div><span class="ebadge" style="font-size:11px">${done?'✓':`${s.sets}×${s.reps||'∞'}`}</span></div>`;
-  }).join('');
+  const mkEr=(s,i)=>{const e=getExo(s.exo);const done=i<sess.exoIdx,cur=i===sess.exoIdx;return`<div class="er${done?' edone':cur?' ecur':''}"><span class="eid">${i+1}</span><div class="ebody"><div class="ename" style="font-size:13px">${e?e.name:s.exo}</div></div><span class="ebadge" style="font-size:11px">${done?'✓':`${s.sets}×${s.reps||'∞'}`}</span></div>`;};
+  let exoSection;
+  if(isF()&&prog.profileId){
+    const zoneOrder=[];prog.slots.forEach(s=>{if(s._zone&&!zoneOrder.includes(s._zone))zoneOrder.push(s._zone);});
+    exoSection='<div class="slab">Exercices</div>'+zoneOrder.map(zId=>{
+      const z=ZONE_MAP[zId];
+      const lbl=z?`${z.icon} ${z.label}`:'🌸 Bien-être';
+      const col=z?z.color:'var(--accent)';
+      const items=prog.slots.map((s,i)=>s._zone===zId?mkEr(s,i):'').join('');
+      return`<div style="font-size:10px;font-weight:800;letter-spacing:2px;color:${col};padding:10px 14px 3px;text-transform:uppercase">${lbl}</div><div class="card card0" style="margin-top:0;margin-bottom:4px">${items}</div>`;
+    }).join('');
+  } else {
+    exoSection=`<div class="slab">Exercices</div><div class="card card0">${prog.slots.map(mkEr).join('')}</div>`;
+  }
 
   const isLastExo=sess.exoIdx>=prog.slots.length-1;
   const isLastSet=sess.setNum>=totalSets;
@@ -607,7 +616,7 @@ function renderActive(){
   }
 
   sc.innerHTML=`
-    <div class="shdr"><span class="lbl">${prog.label}</span><span class="el mono" id="sel">${el}</span><button class="xb" onclick="abandonSession()">✕</button></div>
+    <div class="shdr"><div class="lbl-stack"><div class="lbl-sub">${prog.label} · EXO ${sess.exoIdx+1}/${prog.slots.length}</div><div class="lbl-name">${exo?exo.name:sl.exo}</div></div><span class="el mono" id="sel">${el}</span><button class="xb" onclick="abandonSession()">✕</button></div>
     <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px;position:relative">
       <div class="cec">
         <div class="cec-top">
@@ -619,8 +628,7 @@ function renderActive(){
         ${sl.note?`<div class="cec-note">ℹ ${sl.note}</div>`:''}
       </div>
       ${inputZone}
-      <div class="slab">Exercices</div>
-      <div class="card card0">${exoList}</div>
+      ${exoSection}
     </div>
     <div id="rov" class="rov">
       <div class="rlbl">REPOS</div>
@@ -695,6 +703,39 @@ function renderComplete(){
 
   const feelBtns=[1,2,3,4,5].map(f=>`<button class="feel-btn ${A.feeling===f?'on':''}" onclick="A.feeling=${f};renderComplete()">${feelE(f)}</button>`).join('');
 
+  // Zone promotion cards (femme profile sessions only)
+  let promoHtml='';
+  if(isF()&&prog?.profileId&&sess){
+    const p=getProfile();
+    const zoneLevels=p?.zoneLevels||{};
+    const zonesInSess=[...new Set(prog.slots.filter(s=>s._zone&&s._zone!=='mi').map(s=>s._zone))];
+    const cards=zonesInSess.map(zId=>{
+      const z=ZONE_MAP[zId];if(!z)return'';
+      const curId=zoneLevels[zId]||z.levels[0].id;
+      const curIdx=z.levels.findIndex(l=>l.id===curId);
+      const curLvl=z.levels[curIdx];
+      const nextLvl=z.levels[curIdx+1];
+      if(!curLvl?.promo||!nextLvl)return'';
+      return`<div style="background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-size:14px">${z.icon}</span>
+          <span style="font-size:11px;font-weight:800;letter-spacing:1px;color:${z.color};text-transform:uppercase">${z.label}</span>
+          <span style="font-size:10px;color:var(--dim);margin-left:auto">${curLvl.label}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text);line-height:1.5;margin-bottom:8px">${curLvl.promo}</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn bp bsm bw" style="flex:1;font-size:11px" onclick="advanceZoneLevel('${zId}')">✓ Passer à ${nextLvl.label}</button>
+          <button class="btn bg bsm" style="font-size:11px" onclick="this.closest('div[style]').remove()">Pas encore</button>
+        </div>
+      </div>`;
+    }).join('');
+    if(cards)promoHtml=`<div class="slab">Progression des zones</div><div style="padding:0 14px 10px">${cards}</div>`;
+  }
+
+  // Exo upgrade notification (B→B1 etc.)
+  const exoUp=sess&&getUpgradePending(sess);
+  const exoUpHtml=exoUp?`<div style="background:rgba(232,121,160,.12);border:1px solid rgba(232,121,160,.35);border-radius:10px;padding:10px 14px;margin:8px 0;max-width:300px;text-align:left"><div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:1.5px;margin-bottom:3px">🎯 PASSAGE À B1</div><div style="font-size:12px;color:var(--text);line-height:1.4">${exoUp.msg}</div></div>`:'';
+
   sc.innerHTML=`
     <div class="sa" style="padding-bottom:20px">
       <div class="scw">
@@ -707,10 +748,11 @@ function renderComplete(){
         </div>
         <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:var(--dim);text-transform:uppercase">Ressenti ?</div>
         <div class="feel-row">${feelBtns}</div>
-        ${(()=>{const up=sess&&getUpgradePending(sess);return up?`<div style="background:rgba(232,121,160,.12);border:1px solid rgba(232,121,160,.35);border-radius:10px;padding:10px 14px;margin:8px 0;max-width:300px;text-align:left"><div style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:1.5px;margin-bottom:3px">🎯 PASSAGE À B1</div><div style="font-size:12px;color:var(--text);line-height:1.4">${up.msg}</div></div>`:'';})()}
+        ${exoUpHtml}
         <button class="btn bp bw" style="max-width:300px;margin-top:4px" onclick="saveSession()">💾 ENREGISTRER</button>
         <button class="btn bg" onclick="doAbandonSession()">Annuler</button>
       </div>
+      ${promoHtml}
       ${recapHtml}
     </div>`;
 }
@@ -1057,15 +1099,8 @@ function renderProgrammeFProfile(sc,p){
         ${weekAction}
       </div>
       <div class="slab">NIVEAUX PAR ZONE</div>
-      <div style="padding:0 14px 8px">
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${lvlChips||'<span style="color:var(--dim);font-size:12px">Non définis</span>'}</div>
-        <button class="btn bs bsm bw" onclick="A.showProfileZoneLevels=!A.showProfileZoneLevels;renderProgramme()">⚙ Modifier les niveaux</button>
-      </div>
-      ${A.showProfileZoneLevels?renderProfileZoneLevelsHtml(p,zonesInProfile):''}
-      <div class="slab">PROFIL</div>
-      <div style="padding:0 14px 14px">
-        <button class="btn bs bsm bw" onclick="A.showProfilePicker=!A.showProfilePicker;renderProgramme()">Changer de profil</button>
-        ${A.showProfilePicker?renderProfilePickerHtml(p.profileId):''}
+      <div style="padding:0 14px 10px">
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${lvlChips||'<span style="color:var(--dim);font-size:12px">Non définis</span>'}</div>
       </div>
     </div>`;
 }
@@ -2231,10 +2266,14 @@ function buildProfileSlots(dayIdx){
     const z=ZONE_MAP[zId];if(!z)return;
     const lvlId=zoneLevels[zId]||z.levels[0].id;
     const lvl=z.levels.find(l=>l.id===lvlId)||z.levels[0];
-    if(lvl)slots.push(...applyExoUpgrades(lvl.slots,lvl.id));
+    if(lvl){
+      const n=getSessions().filter(s=>s.profileId===p.profileId).length;
+      const zSlots=(lvl.slotsOpt1&&lvl.slotsOpt2)?(n%2===0?lvl.slotsOpt1:lvl.slotsOpt2):(lvl.slots||[]);
+      slots.push(...applyExoUpgrades(zSlots,lvl.id).map(s=>({...s,_zone:zId})));
+    }
   });
-  slots.push({exo:'f_MI',sets:1,reps:20,rh:'normal',r1:0,r2:0});
-  slots.push({exo:'f_DI',sets:1,reps:null,rh:'normal',r1:0,r2:0,note:'3 min de respiration abdominale',dur:180});
+  slots.push({exo:'f_MI',sets:1,reps:20,rh:'normal',r1:0,r2:0,_zone:'mi'});
+  slots.push({exo:'f_DI',sets:1,reps:null,rh:'normal',r1:0,r2:0,note:'3 min de respiration abdominale',dur:180,_zone:'mi'});
   return{id:'profile_day_'+dayIdx,label:pf.label,slots,profileId:p.profileId};
 }
 
@@ -2243,7 +2282,7 @@ function selectProfileF(id){
   p.profileId=id;
   if(!p.zoneLevels){
     p.zoneLevels={};
-    ZONES.forEach(z=>{p.zoneLevels[z.id]=z.levels[0].id;});
+    ZONES.forEach(z=>{const def=z.levels.find(l=>l.promo)||z.levels[0];p.zoneLevels[z.id]=def.id;});
   }
   A.profileWeek=0;A.showProfilePicker=false;A.showProfileZoneLevels=false;
   S.profile=p;renderMoi();renderProgramme();
@@ -2251,10 +2290,24 @@ function selectProfileF(id){
 
 function setZoneLevelProfile(zoneId,levelId){
   const p=getProfile();if(!p)return;
+  const z=ZONE_MAP[zoneId];const l=z?.levels.find(lv=>lv.id===levelId);
+  if(!confirm(`Changer le niveau de "${z?.label||zoneId}" vers "${l?.label||levelId}" ?`))return;
   if(!p.zoneLevels)p.zoneLevels={};
   p.zoneLevels[zoneId]=levelId;
-  S.profile=p;
+  S.profile=p;debouncedPush();
   if(A.tab==='moi')renderMoi();else renderProgramme();
+}
+
+function advanceZoneLevel(zoneId){
+  const p=getProfile();if(!p)return;
+  const z=ZONE_MAP[zoneId];if(!z)return;
+  const curId=(p.zoneLevels||{})[zoneId]||z.levels[0].id;
+  const curIdx=z.levels.findIndex(l=>l.id===curId);
+  const next=z.levels[curIdx+1];if(!next)return;
+  if(!p.zoneLevels)p.zoneLevels={};
+  p.zoneLevels[zoneId]=next.id;
+  S.profile=p;debouncedPush();
+  renderComplete();
 }
 
 // ═══════════════════════════════ FEMME: exo upgrades (B→B1, etc.) ═══════════════════════════════
